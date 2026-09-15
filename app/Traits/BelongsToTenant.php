@@ -17,7 +17,7 @@ trait BelongsToTenant
     {
         // Auto-scope all queries to current tenant
         static::addGlobalScope('tenant', function (Builder $builder) {
-            if ($tenantId = app('current_tenant_id')) {
+            if (app()->bound('current_tenant_id') && $tenantId = app('current_tenant_id')) {
                 $builder->where($builder->getModel()->getTable() . '.tenant_id', $tenantId);
             }
         });
