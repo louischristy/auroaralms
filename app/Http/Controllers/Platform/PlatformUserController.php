@@ -11,7 +11,7 @@ class PlatformUserController extends Controller
 {
     public function index(Request $request)
     {
-        $tenants = Tenant::withoutTenantScope()->orderBy('name')->get();
+        $tenants = Tenant::orderBy('name')->get();
 
         $users = User::withoutTenantScope()
             ->with('tenant')

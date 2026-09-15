@@ -16,7 +16,7 @@ class DepartmentController extends Controller
         $user = Auth::user();
 
         if ($user->hasRole('platform-admin')) {
-            $tenants = Tenant::withoutTenantScope()->orderBy('name')->get();
+            $tenants = Tenant::orderBy('name')->get();
 
             $query = Department::withoutTenantScope()
                 ->withCount('users')
@@ -52,7 +52,7 @@ class DepartmentController extends Controller
         $tenants = null;
 
         if ($user->hasRole('platform-admin')) {
-            $tenants = Tenant::withoutTenantScope()->orderBy('name')->get();
+            $tenants = Tenant::orderBy('name')->get();
             $managers = User::withoutTenantScope()->role('manager')->orderBy('name')->get();
         } else {
             $managers = User::role('manager')->orderBy('name')->get();
@@ -101,7 +101,7 @@ class DepartmentController extends Controller
 
         if (Auth::user()->hasRole('platform-admin')) {
             $department = Department::withoutTenantScope()->findOrFail($department->id);
-            $tenants = Tenant::withoutTenantScope()->orderBy('name')->get();
+            $tenants = Tenant::orderBy('name')->get();
             $managers = User::withoutTenantScope()->role('manager')->orderBy('name')->get();
         } else {
             $managers = User::role('manager')->orderBy('name')->get();

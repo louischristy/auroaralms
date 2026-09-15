@@ -16,7 +16,7 @@ class PolicyController extends Controller
 
         if ($user->hasRole('platform-admin')) {
             // Platform admin sees all policies grouped by tenant
-            $tenants = Tenant::withoutTenantScope()->orderBy('name')->get();
+            $tenants = Tenant::orderBy('name')->get();
 
             $query = Policy::withoutTenantScope()
                 ->withCount('acknowledgments')
@@ -59,7 +59,7 @@ class PolicyController extends Controller
         $tenants = null;
 
         if ($user->hasRole('platform-admin')) {
-            $tenants = Tenant::withoutTenantScope()->orderBy('name')->get();
+            $tenants = Tenant::orderBy('name')->get();
         }
 
         return view('client.policies.create', compact('tenants'));
@@ -112,7 +112,7 @@ class PolicyController extends Controller
 
         if (Auth::user()->hasRole('platform-admin')) {
             $policy = Policy::withoutTenantScope()->findOrFail($policy->id);
-            $tenants = Tenant::withoutTenantScope()->orderBy('name')->get();
+            $tenants = Tenant::orderBy('name')->get();
         }
 
         return view('client.policies.edit', compact('policy', 'tenants'));

@@ -35,7 +35,7 @@ class PlatformSettingController extends Controller
             $logo = $request->file('logo');
             $logoName = 'platform-logo-' . time() . '.' . $logo->getClientOriginalExtension();
             $logo->move(public_path('uploads/branding'), $logoName);
-            PlatformSetting::set('logo_path', '/uploads/branding/' . $logoName, 'brand');
+            PlatformSetting::set('brand.logo_path', '/uploads/branding/' . $logoName);
         }
 
         // Handle favicon upload
@@ -43,7 +43,7 @@ class PlatformSettingController extends Controller
             $favicon = $request->file('favicon');
             $faviconName = 'favicon-' . time() . '.' . $favicon->getClientOriginalExtension();
             $favicon->move(public_path('uploads/branding'), $faviconName);
-            PlatformSetting::set('favicon_path', '/uploads/branding/' . $faviconName, 'brand');
+            PlatformSetting::set('brand.favicon_path', '/uploads/branding/' . $faviconName);
         }
 
         // Save text settings
@@ -54,7 +54,7 @@ class PlatformSettingController extends Controller
                     if (in_array($key, ['logo_path', 'favicon_path'])) {
                         continue;
                     }
-                    PlatformSetting::set($key, $value, $group);
+                    PlatformSetting::set($group . '.' . $key, $value);
                 }
             }
         }
