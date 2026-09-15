@@ -1,4 +1,4 @@
-name: CI/CD - Auroara LMS
+name: CI-CD - Auroara LMS
 
 on:
   push:
@@ -111,10 +111,16 @@ jobs:
           script: |
             cd ${{ secrets.BLUEHOST_REMOTE_PATH }}
             mkdir -p bootstrap/cache storage/framework/{cache,sessions,views} storage/logs
-            export COMPOSER_HOME=$HOME/.composer
-            php composer.phar install --no-dev --no-interaction --prefer-dist --optimize-autoloader 2>/dev/null || composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
-            cp .env.example .env 2>/dev/null || true
-            php artisan key:generate --force 2>/dev/null || true
+            if [ ! -f composer.phar ]; then
+              php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+              php composer-setup.php
+              php -r "unlink('composer-setup.php');"
+            fi
+            php composer.phar install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+            if [ ! -f .env ]; then
+              cp .env.example .env
+              php artisan key:generate --force
+            fi
             php artisan migrate --force
             php artisan config:cache
             php artisan route:cache
