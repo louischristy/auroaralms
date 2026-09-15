@@ -1,0 +1,123 @@
+name: CI/CD — Auroara LMS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: auroara_lms_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_mysql, xml, ctype, json, bcmath
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install NPM dependencies
+        run: npm ci
+
+      - name: Build assets
+        run: npm run build
+
+      - name: Copy env
+        run: cp .env.example .env
+
+      - name: Generate key
+        run: php artisan key:generate
+
+      - name: Run migrations
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: auroara_lms_test
+          DB_USERNAME: root
+          DB_PASSWORD: password
+        run: php artisan migrate --force
+
+      - name: Run tests
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: auroara_lms_test
+          DB_USERNAME: root
+          DB_PASSWORD: password
+        run: php artisan test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - name: Install Composer dependencies (production)
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install NPM & build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy to Bluehost via SFTP
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+        with:
+          server: ${{ secrets.BLUEHOST_HOST }}
+          username: ${{ secrets.BLUEHOST_USERNAME }}
+          ssh_private_key: ${{ secrets.BLUEHOST_SSH_KEY }}
+          local_path: './'
+          remote_path: ${{ secrets.BLUEHOST_REMOTE_PATH }}
+          args: '-o ConnectTimeout=5'
+          exclude: '.git,node_modules,.env,tests,storage/logs/*,storage/framework/cache/*'
+
+      - name: Post-deploy commands
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.BLUEHOST_HOST }}
+          username: ${{ secrets.BLUEHOST_USERNAME }}
+          key: ${{ secrets.BLUEHOST_SSH_KEY }}
+          script: |
+            cd ${{ secrets.BLUEHOST_REMOTE_PATH }}
+            php artisan migrate --force
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
