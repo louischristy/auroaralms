@@ -1,4 +1,4 @@
-name: CI/CD — Auroara LMS
+name: CI/CD - Auroara LMS
 
 on:
   push:
@@ -30,9 +30,8 @@ jobs:
           extensions: mbstring, pdo_mysql, xml, ctype, json, bcmath
           coverage: none
 
-  - name: Create bootstrap cache directory
+      - name: Create bootstrap cache directory
         run: mkdir -p bootstrap/cache
-
 
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
@@ -88,6 +87,9 @@ jobs:
         with:
           php-version: '8.3'
 
+      - name: Create bootstrap cache directory
+        run: mkdir -p bootstrap/cache
+
       - name: Install Composer dependencies (production)
         run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
@@ -97,7 +99,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install NPM & build
+      - name: Install NPM and build
         run: |
           npm ci
           npm run build
