@@ -20,7 +20,7 @@ class InjectBranding
         'secondary_color' => '#3A7BD5',
         'accent_color' => '#5BC0EB',
         'neutral_color' => '#A8A9AD',
-        'logo_path' => '/images/auroara-logo.png',
+        'logo_path' => '/images/auroara-logo.svg',
         'favicon_path' => '/images/favicon.ico',
         'show_powered_by' => true,
         'powered_by_text' => 'Powered by Auroara Technologies',

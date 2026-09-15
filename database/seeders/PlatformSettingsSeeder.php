@@ -17,7 +17,7 @@ class PlatformSettingsSeeder extends Seeder
             ['group' => 'brand', 'key' => 'secondary_color', 'value' => '#3A7BD5', 'type' => 'string'],
             ['group' => 'brand', 'key' => 'accent_color', 'value' => '#5BC0EB', 'type' => 'string'],
             ['group' => 'brand', 'key' => 'neutral_color', 'value' => '#A8A9AD', 'type' => 'string'],
-            ['group' => 'brand', 'key' => 'logo_path', 'value' => '/images/auroara-logo.png', 'type' => 'string'],
+            ['group' => 'brand', 'key' => 'logo_path', 'value' => '/images/auroara-logo.svg', 'type' => 'string'],
             ['group' => 'brand', 'key' => 'favicon_path', 'value' => '/images/favicon.ico', 'type' => 'string'],
             ['group' => 'brand', 'key' => 'show_powered_by', 'value' => '1', 'type' => 'bool'],
             ['group' => 'brand', 'key' => 'powered_by_text', 'value' => 'Powered by Auroara Technologies', 'type' => 'string'],
