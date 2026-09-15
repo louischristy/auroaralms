@@ -24,7 +24,7 @@ trait BelongsToTenant
 
         // Auto-set tenant_id on creation
         static::creating(function ($model) {
-            if (!$model->tenant_id && $tenantId = app('current_tenant_id')) {
+            if (!$model->tenant_id && app()->bound('current_tenant_id') && $tenantId = app('current_tenant_id')) {
                 $model->tenant_id = $tenantId;
             }
         });
