@@ -111,6 +111,7 @@ jobs:
           script: |
             cd ${{ secrets.BLUEHOST_REMOTE_PATH }}
             mkdir -p bootstrap/cache storage/framework/{cache,sessions,views} storage/logs
+            rm -rf vendor
             if [ ! -f composer.phar ]; then
               php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
               php composer-setup.php
