@@ -30,6 +30,10 @@ jobs:
           extensions: mbstring, pdo_mysql, xml, ctype, json, bcmath
           coverage: none
 
+  - name: Create bootstrap cache directory
+        run: mkdir -p bootstrap/cache
+
+
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
