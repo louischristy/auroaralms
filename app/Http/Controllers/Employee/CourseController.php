@@ -28,7 +28,10 @@ class CourseController extends Controller
             ->where('tenant_id', $tenantId)
             ->pluck('course_id');
 
-        $courses = Course::whereIn('id', $courseIds)
+        $courses = Course::where(function ($q) use ($courseIds, $tenantId) {
+                $q->whereIn('id', $courseIds)
+                  ->orWhere('tenant_id', $tenantId);
+            })
             ->where('is_active', true)
             ->select('id', 'title', 'slug', 'description', 'category', 'difficulty', 'thumbnail_path', 'duration_minutes', 'is_mandatory', 'sort_order')
             ->withCount(['lessons' => fn($q) => $q->where('is_active', true)])
@@ -53,10 +56,11 @@ class CourseController extends Controller
         $user = Auth::user();
 
         // Verify tenant access
-        $hasAccess = DB::table('course_tenant')
-            ->where('course_id', $course->id)
-            ->where('tenant_id', $user->tenant_id)
-            ->exists();
+        $hasAccess = $course->tenant_id === $user->tenant_id
+            || DB::table('course_tenant')
+                ->where('course_id', $course->id)
+                ->where('tenant_id', $user->tenant_id)
+                ->exists();
 
         if (!$hasAccess) {
             abort(403, 'You do not have access to this course.');
@@ -102,10 +106,11 @@ class CourseController extends Controller
     {
         $user = Auth::user();
 
-        $hasAccess = DB::table('course_tenant')
-            ->where('course_id', $course->id)
-            ->where('tenant_id', $user->tenant_id)
-            ->exists();
+        $hasAccess = $course->tenant_id === $user->tenant_id
+            || DB::table('course_tenant')
+                ->where('course_id', $course->id)
+                ->where('tenant_id', $user->tenant_id)
+                ->exists();
 
         if (!$hasAccess) abort(403);
 

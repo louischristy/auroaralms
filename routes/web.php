@@ -10,6 +10,7 @@ use App\Http\Controllers\Platform\PlatformUserController;
 use App\Http\Controllers\Platform\CourseManagementController;
 use App\Http\Controllers\Client\UserController;
 use App\Http\Controllers\Client\DepartmentController;
+use App\Http\Controllers\Client\ClientCourseController;
 use App\Http\Controllers\Client\PhishingController;
 use App\Http\Controllers\Client\PolicyController;
 use App\Http\Controllers\Employee\CertificateController;
@@ -80,6 +81,15 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding'])->group(function
 
         Route::resource('phishing', PhishingController::class)->except(['edit', 'update', 'destroy']);
         Route::post('phishing/{campaign}/simulate', [PhishingController::class, 'simulate'])->name('phishing.simulate');
+
+        // Client Course Builder
+        Route::resource('courses', ClientCourseController::class);
+        Route::post('courses/{course}/lessons', [ClientCourseController::class, 'storeLesson'])->name('courses.lessons.store');
+        Route::put('courses/{course}/lessons/{lesson}', [ClientCourseController::class, 'updateLesson'])->name('courses.lessons.update');
+        Route::delete('courses/{course}/lessons/{lesson}', [ClientCourseController::class, 'destroyLesson'])->name('courses.lessons.destroy');
+        Route::post('courses/{course}/quiz', [ClientCourseController::class, 'storeQuiz'])->name('courses.quiz.store');
+        Route::post('courses/{course}/questions', [ClientCourseController::class, 'storeQuestion'])->name('courses.questions.store');
+        Route::delete('courses/{course}/questions/{question}', [ClientCourseController::class, 'destroyQuestion'])->name('courses.questions.destroy');
     });
 
     // ── Manager Routes ──

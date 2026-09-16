@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -17,7 +18,7 @@ class Course extends Model
     protected $fillable = [
         'title', 'slug', 'description', 'objectives', 'category',
         'difficulty', 'thumbnail_path', 'duration_minutes', 'passing_score',
-        'is_active', 'is_mandatory', 'sort_order',
+        'is_active', 'is_mandatory', 'sort_order', 'tenant_id',
     ];
 
     protected $casts = [
@@ -36,6 +37,11 @@ class Course extends Model
     }
 
     // ── Relationships ──
+
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
 
     public function lessons(): HasMany
     {
@@ -69,6 +75,23 @@ class Course extends Model
     public function scopeByCategory($query, string $category)
     {
         return $query->where('category', $category);
+    }
+
+    public function scopePlatformCourses($query)
+    {
+        return $query->whereNull('tenant_id');
+    }
+
+    public function scopeTenantCourses($query, int $tenantId)
+    {
+        return $query->where('tenant_id', $tenantId);
+    }
+
+    // ── Accessors ──
+
+    public function isClientCreated(): bool
+    {
+        return $this->tenant_id !== null;
     }
 
     // ── Helpers ──
