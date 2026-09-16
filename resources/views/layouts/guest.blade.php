@@ -20,8 +20,8 @@
         <div class="w-full max-w-md">
             {{-- Logo --}}
             <div class="text-center mb-8">
-                <img src="/images/auroara-logo.png" alt="Auroara LMS" class="h-12 mx-auto mb-4">
-                <h1 class="text-2xl font-bold" style="color: var(--color-primary)">Auroara LMS</h1>
+                <img src="{{ $branding['logo_path'] ?? '/images/auroara-logo.svg' }}" alt="{{ $branding['platform_name'] ?? 'Auroara LMS' }}" class="h-12 mx-auto mb-4">
+                <h1 class="text-2xl font-bold" style="color: var(--color-primary)">{{ $branding['platform_name'] ?? 'Auroara LMS' }}</h1>
                 <p class="text-sm text-gray-500 mt-1">Cybersecurity Awareness Training Platform</p>
             </div>
 
