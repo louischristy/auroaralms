@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             CourseSeederBatch3::class,
             PhishingTemplateSeeder::class,
             BadgeSeeder::class,
+            VideoLessonSeeder::class,
         ]);
     }
 }
