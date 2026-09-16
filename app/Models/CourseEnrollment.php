@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Notifications\CourseAssigned;
+use App\Notifications\CourseCompleted;
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +22,20 @@ class CourseEnrollment extends Model
         'completed_at' => 'datetime',
         'due_date' => 'date',
     ];
+
+    protected static function booted(): void
+    {
+        static::created(function (CourseEnrollment $enrollment) {
+            try {
+                $enrollment->load(['user', 'course']);
+                if ($enrollment->user) {
+                    $enrollment->user->notify(new CourseAssigned($enrollment->course, $enrollment));
+                }
+            } catch (\Throwable $e) {
+                \Log::warning('Failed to send course assigned notification: ' . $e->getMessage());
+            }
+        });
+    }
 
     public function user(): BelongsTo
     {
@@ -87,9 +103,10 @@ class CourseEnrollment extends Model
 
         $this->save();
 
-        // Auto-issue certificate on first completion
+        // Auto-issue certificate and notify on first completion
         if ($this->status === 'completed' && !$wasCompleted) {
             $this->issueCertificate();
+            $this->sendCompletionNotification();
         }
     }
 
@@ -120,5 +137,22 @@ class CourseEnrollment extends Model
             'issued_at' => now(),
             'expires_at' => now()->addYear(),
         ]);
+    }
+
+    protected function sendCompletionNotification(): void
+    {
+        try {
+            $this->load(['user', 'course']);
+            $certificate = Certificate::where('user_id', $this->user_id)
+                ->where('course_id', $this->course_id)
+                ->where('tenant_id', $this->tenant_id)
+                ->first();
+
+            if ($this->user) {
+                $this->user->notify(new CourseCompleted($this->course, $certificate));
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('Failed to send course completed notification: ' . $e->getMessage());
+        }
     }
 }
