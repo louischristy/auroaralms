@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Global platform-level settings.
@@ -22,19 +23,21 @@ class PlatformSetting extends Model
      */
     public static function get(string $key, mixed $default = null): mixed
     {
-        $parts = explode('.', $key, 2);
-        $group = count($parts) === 2 ? $parts[0] : 'general';
-        $settingKey = count($parts) === 2 ? $parts[1] : $parts[0];
+        return Cache::remember("platform_setting_{$key}", 3600, function () use ($key, $default) {
+            $parts = explode('.', $key, 2);
+            $group = count($parts) === 2 ? $parts[0] : 'general';
+            $settingKey = count($parts) === 2 ? $parts[1] : $parts[0];
 
-        $setting = static::where('group', $group)
-            ->where('key', $settingKey)
-            ->first();
+            $setting = static::where('group', $group)
+                ->where('key', $settingKey)
+                ->first();
 
-        if (!$setting) {
-            return $default;
-        }
+            if (!$setting) {
+                return $default;
+            }
 
-        return self::castValue($setting->value, $setting->type);
+            return self::castValue($setting->value, $setting->type);
+        });
     }
 
     /**
@@ -50,6 +53,12 @@ class PlatformSetting extends Model
             ['group' => $group, 'key' => $settingKey],
             ['value' => is_array($value) ? json_encode($value) : (string) $value, 'type' => $type]
         );
+
+        // Bust caches
+        Cache::forget("platform_setting_{$key}");
+        Cache::forget("platform_setting_group_{$group}");
+        // Also bust branding cache since platform settings affect it
+        Cache::forget('branding_none');
     }
 
     /**
@@ -57,9 +66,11 @@ class PlatformSetting extends Model
      */
     public static function getGroup(string $group): array
     {
-        return static::where('group', $group)
-            ->pluck('value', 'key')
-            ->toArray();
+        return Cache::remember("platform_setting_group_{$group}", 3600, function () use ($group) {
+            return static::where('group', $group)
+                ->pluck('value', 'key')
+                ->toArray();
+        });
     }
 
     private static function castValue(string $value, string $type): mixed

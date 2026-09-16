@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\PlatformSetting;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -28,29 +29,35 @@ class InjectBranding
 
     public function handle(Request $request, Closure $next): Response
     {
-        $branding = $this->defaults;
-
-        // Layer 1: Platform-level overrides
-        $platformBrand = PlatformSetting::getGroup('brand');
-        if (!empty($platformBrand)) {
-            $branding = array_merge($branding, $platformBrand);
-        }
-
-        // Layer 2: Tenant-level overrides (if tenant context exists)
         $tenant = app()->bound('current_tenant') ? app('current_tenant') : null;
-        if ($tenant) {
-            $tenantBrand = $tenant->getBrandSettings();
-            // Only override non-null tenant values
-            foreach ($tenantBrand as $key => $value) {
-                if ($value !== null) {
-                    $branding[$key] = $value;
+        $tenantId = $tenant?->id ?? 'none';
+
+        $branding = Cache::remember("branding_{$tenantId}", 3600, function () use ($tenant) {
+            $branding = $this->defaults;
+
+            // Layer 1: Platform-level overrides
+            $platformBrand = PlatformSetting::getGroup('brand');
+            if (!empty($platformBrand)) {
+                $branding = array_merge($branding, $platformBrand);
+            }
+
+            // Layer 2: Tenant-level overrides (if tenant context exists)
+            if ($tenant) {
+                $tenantBrand = $tenant->getBrandSettings();
+                // Only override non-null tenant values
+                foreach ($tenantBrand as $key => $value) {
+                    if ($value !== null) {
+                        $branding[$key] = $value;
+                    }
+                }
+                // Tenant logo takes priority
+                if ($tenant->logo_path) {
+                    $branding['logo_path'] = '/uploads/tenants/' . $tenant->id . '/' . $tenant->logo_path;
                 }
             }
-            // Tenant logo takes priority
-            if ($tenant->logo_path) {
-                $branding['logo_path'] = '/uploads/tenants/' . $tenant->id . '/' . $tenant->logo_path;
-            }
-        }
+
+            return $branding;
+        });
 
         view()->share('branding', $branding);
 

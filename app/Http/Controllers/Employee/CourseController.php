@@ -30,6 +30,7 @@ class CourseController extends Controller
 
         $courses = Course::whereIn('id', $courseIds)
             ->where('is_active', true)
+            ->select('id', 'title', 'slug', 'description', 'category', 'difficulty', 'thumbnail_path', 'duration_minutes', 'is_mandatory', 'sort_order')
             ->withCount(['lessons' => fn($q) => $q->where('is_active', true)])
             ->orderBy('category')
             ->orderBy('sort_order')
@@ -37,6 +38,7 @@ class CourseController extends Controller
 
         // Get enrollments for this user
         $enrollments = CourseEnrollment::where('user_id', $user->id)
+            ->select('id', 'user_id', 'course_id', 'status', 'progress_percent', 'due_date', 'completed_at')
             ->get()
             ->keyBy('course_id');
 
@@ -81,6 +83,7 @@ class CourseController extends Controller
         $quizAttempts = $course->quiz
             ? QuizAttempt::where('user_id', $user->id)
                 ->where('quiz_id', $course->quiz->id)
+                ->select('id', 'user_id', 'quiz_id', 'course_id', 'score', 'passed', 'completed_at', 'created_at')
                 ->orderByDesc('created_at')
                 ->get()
             : collect();
