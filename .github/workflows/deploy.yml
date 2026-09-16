@@ -1,4 +1,4 @@
-name: CI-CD - Auroara LMS
+name: CI/CD — Auroara LMS
 
 on:
   push:
@@ -30,19 +30,17 @@ jobs:
           extensions: mbstring, pdo_mysql, xml, ctype, json, bcmath
           coverage: none
 
-      - name: Create bootstrap cache directory
-        run: mkdir -p bootstrap/cache
-
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
+          cache: 'npm'
 
       - name: Install NPM dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build assets
         run: npm run build
@@ -81,48 +79,64 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - name: Install Composer dependencies (production)
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
+          cache: 'npm'
 
-      - name: Build frontend assets
+      - name: Install NPM & build
         run: |
-          npm install
+          npm ci
           npm run build
 
-      - name: Deploy to Bluehost via SFTP
-        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
-        with:
-          server: ${{ secrets.BLUEHOST_HOST }}
-          username: ${{ secrets.BLUEHOST_USERNAME }}
-          ssh_private_key: ${{ secrets.BLUEHOST_SSH_KEY }}
-          local_path: './'
-          remote_path: ${{ secrets.BLUEHOST_REMOTE_PATH }}
-          sftpArgs: '-o ConnectTimeout=30'
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.BLUEHOST_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.BLUEHOST_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Post-deploy - install dependencies and migrate
+      - name: Deploy via lftp (incremental)
+        run: |
+          lftp -e "
+            set sftp:connect-program 'ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no';
+            open sftp://${{ secrets.BLUEHOST_USERNAME }}@${{ secrets.BLUEHOST_HOST }};
+            mirror --reverse --delete --verbose --parallel=4 \
+              --exclude ^\.git/ \
+              --exclude ^node_modules/ \
+              --exclude ^\.env$ \
+              --exclude ^tests/ \
+              --exclude ^storage/logs/ \
+              --exclude ^storage/framework/cache/ \
+              --exclude ^storage/framework/sessions/ \
+              --exclude ^storage/framework/views/ \
+              ./ ${{ secrets.BLUEHOST_REMOTE_PATH }};
+            quit
+          "
+
+      - name: Post-deploy commands
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.BLUEHOST_HOST }}
           username: ${{ secrets.BLUEHOST_USERNAME }}
           key: ${{ secrets.BLUEHOST_SSH_KEY }}
-          command_timeout: 10m
+          command_timeout: 5m
           script: |
             cd ${{ secrets.BLUEHOST_REMOTE_PATH }}
-            mkdir -p bootstrap/cache storage/framework/{cache,sessions,views} storage/logs
-            rm -rf vendor
-            if [ ! -f composer.phar ]; then
-              php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-              php composer-setup.php
-              php -r "unlink('composer-setup.php');"
-            fi
-            php composer.phar install --no-dev --no-interaction --prefer-dist --optimize-autoloader
-            if [ ! -f .env ]; then
-              cp .env.example .env
-              php artisan key:generate --force
-            fi
             php artisan migrate --force
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
+            # Sync public assets to served site folder
+            cp -r public/build public/images ~/public_html/website_0b6edf36/ 2>/dev/null || true
+            mkdir -p public/uploads/branding
+            [ -L ~/public_html/website_0b6edf36/uploads ] || ln -s $(pwd)/public/uploads ~/public_html/website_0b6edf36/uploads 2>/dev/null || cp -r public/uploads ~/public_html/website_0b6edf36/ 2>/dev/null || true
