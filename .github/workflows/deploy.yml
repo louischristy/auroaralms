@@ -31,7 +31,9 @@ jobs:
           coverage: none
 
       - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+        run: |
+          mkdir -p bootstrap/cache storage/framework/{sessions,views,cache}
+          composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -85,7 +87,9 @@ jobs:
           php-version: '8.3'
 
       - name: Install Composer dependencies (production)
-        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+        run: |
+          mkdir -p bootstrap/cache storage/framework/{sessions,views,cache}
+          composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
