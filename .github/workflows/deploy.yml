@@ -109,6 +109,9 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.BLUEHOST_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
       - name: Deploy via lftp (incremental)
         run: |
           lftp -e "
