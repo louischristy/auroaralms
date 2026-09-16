@@ -42,10 +42,10 @@
                         <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                               fill="none" stroke="#e5e7eb" stroke-width="3"/>
                         <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                              fill="none" stroke="{{ $enrollment->status === 'completed' ? '#10b981' : 'var(--color-primary)' }}" stroke-width="3"
-                              stroke-dasharray="{{ $enrollment->progress_percent }}, 100"/>
+                              fill="none" stroke="{{ ($enrollment->status ?? '') === 'completed' ? '#10b981' : 'var(--color-primary)' }}" stroke-width="3"
+                              stroke-dasharray="{{ $enrollment->progress_percent ?? 0 }}, 100"/>
                     </svg>
-                    <span class="absolute inset-0 flex items-center justify-center text-lg font-bold text-gray-800">{{ $enrollment->progress_percent }}%</span>
+                    <span class="absolute inset-0 flex items-center justify-center text-lg font-bold text-gray-800">{{ $enrollment->progress_percent ?? 0 }}%</span>
                 </div>
                 <p class="text-xs text-gray-400 mt-1">{{ $course->duration_minutes }} min</p>
             </div>
