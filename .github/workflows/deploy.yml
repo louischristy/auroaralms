@@ -109,26 +109,19 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.BLUEHOST_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Install lftp
-        run: sudo apt-get update && sudo apt-get install -y lftp
-
-      - name: Deploy via lftp (incremental)
+      - name: Deploy via rsync (incremental)
         run: |
-          lftp -e "
-            set sftp:connect-program 'ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no';
-            open sftp://${{ secrets.BLUEHOST_USERNAME }}@${{ secrets.BLUEHOST_HOST }};
-            mirror --reverse --delete --verbose --parallel=4 \
-              --exclude ^\.git/ \
-              --exclude ^node_modules/ \
-              --exclude ^\.env$ \
-              --exclude ^tests/ \
-              --exclude ^storage/logs/ \
-              --exclude ^storage/framework/cache/ \
-              --exclude ^storage/framework/sessions/ \
-              --exclude ^storage/framework/views/ \
-              ./ ${{ secrets.BLUEHOST_REMOTE_PATH }};
-            quit
-          "
+          rsync -azv --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            --exclude '.git/' \
+            --exclude 'node_modules/' \
+            --exclude '.env' \
+            --exclude 'tests/' \
+            --exclude 'storage/logs/' \
+            --exclude 'storage/framework/cache/' \
+            --exclude 'storage/framework/sessions/' \
+            --exclude 'storage/framework/views/' \
+            ./ ${{ secrets.BLUEHOST_USERNAME }}@${{ secrets.BLUEHOST_HOST }}:${{ secrets.BLUEHOST_REMOTE_PATH }}
 
       - name: Post-deploy commands
         uses: appleboy/ssh-action@v1
