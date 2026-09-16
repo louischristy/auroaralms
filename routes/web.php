@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Platform\TenantController;
 use App\Http\Controllers\Platform\PlatformSettingController;
 use App\Http\Controllers\Platform\PlatformUserController;
+use App\Http\Controllers\Platform\CourseManagementController;
 use App\Http\Controllers\Client\UserController;
 use App\Http\Controllers\Client\DepartmentController;
 use App\Http\Controllers\Client\PolicyController;
@@ -52,6 +53,17 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding'])->group(function
 
         // All Users (cross-tenant view)
         Route::get('users', [PlatformUserController::class, 'index'])->name('users.index');
+
+        // Course Management (catalog)
+        Route::resource('courses', CourseManagementController::class);
+        Route::post('courses/{course}/assign-tenants', [CourseManagementController::class, 'assignTenants'])->name('courses.assign-tenants');
+        Route::post('courses/{course}/lessons', [CourseManagementController::class, 'storeLesson'])->name('courses.lessons.store');
+        Route::put('courses/{course}/lessons/{lesson}', [CourseManagementController::class, 'updateLesson'])->name('courses.lessons.update');
+        Route::delete('courses/{course}/lessons/{lesson}', [CourseManagementController::class, 'destroyLesson'])->name('courses.lessons.destroy');
+        Route::post('courses/{course}/lessons/reorder', [CourseManagementController::class, 'reorderLessons'])->name('courses.lessons.reorder');
+        Route::post('courses/{course}/quiz', [CourseManagementController::class, 'storeQuiz'])->name('courses.quiz.store');
+        Route::post('courses/{course}/questions', [CourseManagementController::class, 'storeQuestion'])->name('courses.questions.store');
+        Route::delete('courses/{course}/questions/{question}', [CourseManagementController::class, 'destroyQuestion'])->name('courses.questions.destroy');
     });
 
     // ── Client Admin Routes ──
@@ -74,7 +86,11 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding'])->group(function
     Route::prefix('learn')->name('learn.')->group(function () {
         Route::get('courses', [CourseController::class, 'index'])->name('courses.index');
         Route::get('courses/{course}', [CourseController::class, 'show'])->name('courses.show');
-        Route::post('courses/{course}/complete-module', [CourseController::class, 'completeModule'])->name('courses.complete-module');
+        Route::get('courses/{course}/lessons/{lesson}', [CourseController::class, 'lesson'])->name('courses.lesson');
+        Route::post('courses/{course}/lessons/{lesson}/complete', [CourseController::class, 'completeLesson'])->name('courses.complete-lesson');
+        Route::get('courses/{course}/quiz', [CourseController::class, 'showQuiz'])->name('courses.quiz');
+        Route::post('courses/{course}/quiz', [CourseController::class, 'submitQuiz'])->name('courses.submit-quiz');
+        Route::get('courses/{course}/quiz-result/{attempt}', [CourseController::class, 'quizResult'])->name('courses.quiz-result');
 
         Route::get('policies', [PolicyAcknowledgmentController::class, 'index'])->name('policies.index');
         Route::get('policies/{policy}', [PolicyAcknowledgmentController::class, 'show'])->name('policies.show');
