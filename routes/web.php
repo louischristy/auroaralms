@@ -11,6 +11,7 @@ use App\Http\Controllers\Platform\CourseManagementController;
 use App\Http\Controllers\Client\UserController;
 use App\Http\Controllers\Client\DepartmentController;
 use App\Http\Controllers\Client\PolicyController;
+use App\Http\Controllers\Employee\CertificateController;
 use App\Http\Controllers\Employee\CourseController;
 use App\Http\Controllers\Employee\PolicyAcknowledgmentController;
 use App\Http\Controllers\ProfileController;
@@ -91,6 +92,9 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding'])->group(function
         Route::get('courses/{course}/quiz', [CourseController::class, 'showQuiz'])->name('courses.quiz');
         Route::post('courses/{course}/quiz', [CourseController::class, 'submitQuiz'])->name('courses.submit-quiz');
         Route::get('courses/{course}/quiz-result/{attempt}', [CourseController::class, 'quizResult'])->name('courses.quiz-result');
+
+        Route::get('certificates', [CertificateController::class, 'index'])->name('certificates.index');
+        Route::get('certificates/{certificate}/download', [CertificateController::class, 'download'])->name('certificates.download');
 
         Route::get('policies', [PolicyAcknowledgmentController::class, 'index'])->name('policies.index');
         Route::get('policies/{policy}', [PolicyAcknowledgmentController::class, 'show'])->name('policies.show');

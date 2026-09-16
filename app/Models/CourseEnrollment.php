@@ -75,6 +75,8 @@ class CourseEnrollment extends Model
         }
 
         // Update status
+        $wasCompleted = $this->getOriginal('status') === 'completed';
+
         if ($this->progress_percent >= 100) {
             $this->status = 'completed';
             $this->completed_at = $this->completed_at ?? now();
@@ -84,5 +86,39 @@ class CourseEnrollment extends Model
         }
 
         $this->save();
+
+        // Auto-issue certificate on first completion
+        if ($this->status === 'completed' && !$wasCompleted) {
+            $this->issueCertificate();
+        }
+    }
+
+    protected function issueCertificate(): void
+    {
+        $existing = Certificate::where('user_id', $this->user_id)
+            ->where('course_id', $this->course_id)
+            ->where('tenant_id', $this->tenant_id)
+            ->first();
+
+        if ($existing) {
+            return;
+        }
+
+        // Get best quiz score if quiz exists
+        $score = QuizAttempt::where('user_id', $this->user_id)
+            ->where('course_id', $this->course_id)
+            ->where('passed', true)
+            ->max('score');
+
+        Certificate::create([
+            'user_id' => $this->user_id,
+            'course_id' => $this->course_id,
+            'tenant_id' => $this->tenant_id,
+            'enrollment_id' => $this->id,
+            'certificate_number' => Certificate::generateNumber(),
+            'score' => $score,
+            'issued_at' => now(),
+            'expires_at' => now()->addYear(),
+        ]);
     }
 }

@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             PlatformSettingsSeeder::class,
             DemoTenantSeeder::class,
             CourseSeeder::class,
+            CourseSeederBatch2::class,
         ]);
     }
 }
