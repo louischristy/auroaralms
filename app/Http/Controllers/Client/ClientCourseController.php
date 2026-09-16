@@ -15,14 +15,19 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ClientCourseController extends Controller
 {
-    private function tenantId(): int
+    private function tenantId(): ?int
     {
         return app('current_tenant_id');
     }
 
     private function authorizeTenantCourse(Course $course): void
     {
-        if ((int) $course->tenant_id !== $this->tenantId()) {
+        $tenantId = $this->tenantId();
+        // Platform admin can access any tenant course
+        if (!$tenantId) {
+            return;
+        }
+        if ((int) $course->tenant_id !== $tenantId) {
             abort(Response::HTTP_FORBIDDEN, 'This course does not belong to your organization.');
         }
     }
@@ -31,14 +36,23 @@ class ClientCourseController extends Controller
     {
         $tenantId = $this->tenantId();
 
-        $courses = Course::tenantCourses($tenantId)
-            ->withCount('lessons')
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
-
-        $platformCourseCount = DB::table('course_tenant')
-            ->where('tenant_id', $tenantId)
-            ->count();
+        // Platform admin sees all tenant-created courses across all tenants
+        if (!$tenantId) {
+            $courses = Course::whereNotNull('tenant_id')
+                ->with('tenant:id,name')
+                ->withCount('lessons')
+                ->orderBy('created_at', 'desc')
+                ->paginate(20);
+            $platformCourseCount = Course::whereNull('tenant_id')->count();
+        } else {
+            $courses = Course::tenantCourses($tenantId)
+                ->withCount('lessons')
+                ->orderBy('created_at', 'desc')
+                ->paginate(20);
+            $platformCourseCount = DB::table('course_tenant')
+                ->where('tenant_id', $tenantId)
+                ->count();
+        }
 
         return view('client.courses.index', compact('courses', 'platformCourseCount'));
     }
@@ -63,6 +77,10 @@ class ClientCourseController extends Controller
         ]);
 
         $tenantId = $this->tenantId();
+
+        if (!$tenantId) {
+            return back()->with('error', 'Platform admins should use the Platform Course Manager to create courses. The Course Builder is for client admins to create tenant-specific courses.');
+        }
 
         $validated['slug'] = Str::slug($validated['title']);
         $validated['objectives'] = $this->parseObjectives($request->objectives);
