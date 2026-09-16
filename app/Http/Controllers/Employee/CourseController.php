@@ -55,15 +55,17 @@ class CourseController extends Controller
     {
         $user = Auth::user();
 
-        // Verify tenant access
-        $hasAccess = $course->tenant_id === $user->tenant_id
-            || DB::table('course_tenant')
-                ->where('course_id', $course->id)
-                ->where('tenant_id', $user->tenant_id)
-                ->exists();
+        // Verify tenant access (platform admins can view all courses)
+        if ($user->tenant_id) {
+            $hasAccess = ($course->tenant_id && $course->tenant_id === $user->tenant_id)
+                || DB::table('course_tenant')
+                    ->where('course_id', $course->id)
+                    ->where('tenant_id', $user->tenant_id)
+                    ->exists();
 
-        if (!$hasAccess) {
-            abort(403, 'You do not have access to this course.');
+            if (!$hasAccess) {
+                abort(403, 'You do not have access to this course.');
+            }
         }
 
         $course->load([
@@ -71,11 +73,14 @@ class CourseController extends Controller
             'quiz',
         ]);
 
-        // Auto-enroll if not enrolled
-        $enrollment = CourseEnrollment::firstOrCreate(
-            ['user_id' => $user->id, 'course_id' => $course->id],
-            ['tenant_id' => $user->tenant_id, 'status' => 'not_started']
-        );
+        // Auto-enroll if not enrolled (skip for platform admins with no tenant)
+        $enrollment = null;
+        if ($user->tenant_id) {
+            $enrollment = CourseEnrollment::firstOrCreate(
+                ['user_id' => $user->id, 'course_id' => $course->id],
+                ['tenant_id' => $user->tenant_id, 'status' => 'not_started']
+            );
+        }
 
         // Get completed lesson IDs
         $completedLessonIds = LessonCompletion::where('user_id', $user->id)
@@ -106,13 +111,15 @@ class CourseController extends Controller
     {
         $user = Auth::user();
 
-        $hasAccess = $course->tenant_id === $user->tenant_id
-            || DB::table('course_tenant')
-                ->where('course_id', $course->id)
-                ->where('tenant_id', $user->tenant_id)
-                ->exists();
+        if ($user->tenant_id) {
+            $hasAccess = ($course->tenant_id && $course->tenant_id === $user->tenant_id)
+                || DB::table('course_tenant')
+                    ->where('course_id', $course->id)
+                    ->where('tenant_id', $user->tenant_id)
+                    ->exists();
 
-        if (!$hasAccess) abort(403);
+            if (!$hasAccess) abort(403);
+        }
 
         $course->load(['lessons' => fn($q) => $q->where('is_active', true)->orderBy('sort_order')]);
 
