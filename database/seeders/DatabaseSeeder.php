@@ -14,6 +14,9 @@ class DatabaseSeeder extends Seeder
             DemoTenantSeeder::class,
             CourseSeeder::class,
             CourseSeederBatch2::class,
+            CourseSeederBatch3::class,
+            PhishingTemplateSeeder::class,
+            BadgeSeeder::class,
         ]);
     }
 }

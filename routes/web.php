@@ -10,9 +10,11 @@ use App\Http\Controllers\Platform\PlatformUserController;
 use App\Http\Controllers\Platform\CourseManagementController;
 use App\Http\Controllers\Client\UserController;
 use App\Http\Controllers\Client\DepartmentController;
+use App\Http\Controllers\Client\PhishingController;
 use App\Http\Controllers\Client\PolicyController;
 use App\Http\Controllers\Employee\CertificateController;
 use App\Http\Controllers\Employee\CourseController;
+use App\Http\Controllers\Employee\LeaderboardController;
 use App\Http\Controllers\Employee\PolicyAcknowledgmentController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -75,6 +77,9 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding'])->group(function
         Route::resource('departments', DepartmentController::class);
         Route::resource('policies', PolicyController::class);
         Route::post('policies/{policy}/push', [PolicyController::class, 'push'])->name('policies.push');
+
+        Route::resource('phishing', PhishingController::class)->except(['edit', 'update', 'destroy']);
+        Route::post('phishing/{campaign}/simulate', [PhishingController::class, 'simulate'])->name('phishing.simulate');
     });
 
     // ── Manager Routes ──
@@ -99,5 +104,7 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding'])->group(function
         Route::get('policies', [PolicyAcknowledgmentController::class, 'index'])->name('policies.index');
         Route::get('policies/{policy}', [PolicyAcknowledgmentController::class, 'show'])->name('policies.show');
         Route::post('policies/{policy}/acknowledge', [PolicyAcknowledgmentController::class, 'acknowledge'])->name('policies.acknowledge');
+
+        Route::get('leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard.index');
     });
 });

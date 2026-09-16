@@ -107,6 +107,9 @@ class CourseEnrollment extends Model
         if ($this->status === 'completed' && !$wasCompleted) {
             $this->issueCertificate();
             $this->sendCompletionNotification();
+
+            // Evaluate badges on completion
+            app(\App\Services\BadgeService::class)->evaluate($this->user);
         }
     }
 
