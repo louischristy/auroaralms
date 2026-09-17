@@ -52,7 +52,9 @@ class TwoFactorAuthTest extends TestCase
             ->withSession(['2fa_setup_secret' => 'JBSWY3DPEHPK3PXP'])
             ->post(route('two-factor.confirm'), ['code' => '123456']);
 
-        $response->assertRedirect();
+        // Controller returns recovery-codes view (200) on success, not a redirect
+        $response->assertStatus(200);
+        $response->assertViewIs('auth.two-factor.recovery-codes');
         $user->refresh();
         $this->assertTrue($user->two_factor_enabled);
         $this->assertNotNull($user->two_factor_recovery_codes);
