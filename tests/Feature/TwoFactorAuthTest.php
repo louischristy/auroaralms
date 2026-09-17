@@ -43,10 +43,10 @@ class TwoFactorAuthTest extends TestCase
         $user = $this->createEmployee($tenant);
 
         // Mock TotpService to avoid timing issues in CI
-        $mock = \Mockery::mock(TotpService::class);
-        $mock->shouldReceive('verify')->once()->andReturn(true);
-        $mock->shouldReceive('generateRecoveryCodes')->once()->andReturn(['code1', 'code2']);
-        $this->app->instance(TotpService::class, $mock);
+        $this->mock(TotpService::class, function ($mock) {
+            $mock->shouldReceive('verify')->once()->andReturn(true);
+            $mock->shouldReceive('generateRecoveryCodes')->once()->andReturn(['code1', 'code2']);
+        });
 
         $response = $this->actingAs($user)
             ->withSession(['2fa_setup_secret' => 'JBSWY3DPEHPK3PXP'])
