@@ -16,8 +16,23 @@
                 Open your authenticator app (Google Authenticator, Microsoft Authenticator, Authy, etc.) and scan the QR code below.
             </p>
 
-            <div class="flex justify-center p-4 bg-white rounded-lg border border-gray-200">
-                {!! $qrSvg !!}
+            <div class="flex justify-center p-4 bg-white rounded-lg border border-gray-200"
+                 x-data="{ loaded: false }"
+                 x-init="
+                    const s = document.createElement('script');
+                    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+                    s.onload = () => {
+                        new QRCode($refs.qr, {
+                            text: {{ Js::from($qrUri) }},
+                            width: 192,
+                            height: 192,
+                            correctLevel: QRCode.CorrectLevel.L
+                        });
+                        loaded = true;
+                    };
+                    document.head.appendChild(s);
+                 ">
+                <div x-ref="qr" class="w-48 h-48"></div>
             </div>
         </div>
 
