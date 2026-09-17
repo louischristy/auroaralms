@@ -2,6 +2,8 @@
 @section('title', 'Edit: ' . $course->title . ' — ' . ($branding['platform_name'] ?? 'Auroara LMS'))
 
 @section('content')
+<link href="https://cdnjs.cloudflare.com/ajax/libs/quill/2.0.3/quill.snow.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quill/2.0.3/quill.min.js"></script>
 <div class="max-w-5xl mx-auto space-y-6" x-data="{ tab: '{{ session('_tab', 'details') }}' }">
     <a href="{{ route('manage.courses.index') }}" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
@@ -10,9 +12,15 @@
 
     <div class="flex items-center justify-between">
         <h1 class="text-2xl font-bold text-gray-900">{{ $course->title }}</h1>
-        <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium {{ $course->is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">
-            {{ $course->is_active ? 'Active' : 'Inactive' }}
-        </span>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('manage.courses.preview', $course) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                Preview
+            </a>
+            <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium {{ $course->is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">
+                {{ $course->is_active ? 'Active' : 'Inactive' }}
+            </span>
+        </div>
     </div>
 
     {{-- Tabs --}}
@@ -111,11 +119,33 @@
                 <div class="px-6 py-4 border-b border-gray-100">
                     <h2 class="font-semibold text-gray-900">Lessons ({{ $course->lessons->count() }})</h2>
                 </div>
-                <div class="divide-y divide-gray-50">
+                <div class="divide-y divide-gray-50" x-data="{
+                    reorder(lessonId, direction) {
+                        let items = Array.from(this.$el.querySelectorAll('[data-lesson-id]'));
+                        let ids = items.map(el => parseInt(el.dataset.lessonId));
+                        let idx = ids.indexOf(lessonId);
+                        let swap = idx + direction;
+                        if (swap < 0 || swap >= ids.length) return;
+                        [ids[idx], ids[swap]] = [ids[swap], ids[idx]];
+                        fetch('{{ route('manage.courses.lessons.reorder', $course) }}', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify({ order: ids })
+                        }).then(() => location.reload());
+                    }
+                }">
                     @foreach($course->lessons as $lesson)
-                        <div class="px-6 py-4" x-data="{ editing: false }">
+                        <div class="px-6 py-4" x-data="{ editing: false }" data-lesson-id="{{ $lesson->id }}">
                             <div x-show="!editing" class="flex items-center justify-between">
                                 <div class="flex items-center gap-3">
+                                    <div class="flex flex-col gap-0.5">
+                                        <button @click="reorder({{ $lesson->id }}, -1)" class="text-gray-300 hover:text-gray-600 {{ $loop->first ? 'invisible' : '' }}" type="button" title="Move up">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                        </button>
+                                        <button @click="reorder({{ $lesson->id }}, 1)" class="text-gray-300 hover:text-gray-600 {{ $loop->last ? 'invisible' : '' }}" type="button" title="Move down">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                        </button>
+                                    </div>
                                     <span class="text-xs text-gray-400 w-6 text-center">{{ $lesson->sort_order + 1 }}</span>
                                     <div>
                                         <p class="font-medium text-gray-900">{{ $lesson->title }}</p>
@@ -157,8 +187,18 @@
                                         <input type="file" name="scorm_package" accept=".zip" class="input">
                                         <p class="text-xs text-gray-400">Upload a new SCORM package to replace.</p>
                                     </div>
-                                    <div x-show="editType !== 'scorm'">
-                                        <textarea name="content" rows="8" class="input font-mono text-sm"
+                                    <div x-show="editType !== 'scorm'" x-data x-init="
+                                        if (typeof Quill !== 'undefined') {
+                                            let q = new Quill($refs.editEditor{{ $loop->index }}, {
+                                                theme: 'snow',
+                                                modules: { toolbar: [['bold', 'italic', 'underline'], [{ 'header': [1, 2, 3, false] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['link'], ['clean']] }
+                                            });
+                                            q.root.innerHTML = $refs.editContent{{ $loop->index }}.value;
+                                            q.on('text-change', () => { $refs.editContent{{ $loop->index }}.value = q.root.innerHTML; });
+                                        }
+                                    ">
+                                        <div x-ref="editEditor{{ $loop->index }}"></div>
+                                        <textarea x-ref="editContent{{ $loop->index }}" name="content" rows="8" class="hidden"
                                                   :required="editType !== 'scorm'">{{ $lesson->content }}</textarea>
                                     </div>
                                     <div class="flex justify-end gap-3">
@@ -197,8 +237,17 @@
                     <input type="file" name="scorm_package" accept=".zip" class="input">
                     <p class="text-xs text-gray-400">Upload a SCORM 1.2 or 2004 package (ZIP). Max 100 MB.</p>
                 </div>
-                <div x-show="newType !== 'scorm'">
-                    <textarea name="content" rows="10" class="input font-mono text-sm" placeholder="Lesson content (HTML supported)"
+                <div x-show="newType !== 'scorm'" x-data x-init="
+                    if (typeof Quill !== 'undefined') {
+                        let q = new Quill($refs.newEditor, {
+                            theme: 'snow',
+                            modules: { toolbar: [['bold', 'italic', 'underline'], [{ 'header': [1, 2, 3, false] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['link'], ['clean']] }
+                        });
+                        q.on('text-change', () => { $refs.newContent.value = q.root.innerHTML; });
+                    }
+                ">
+                    <div x-ref="newEditor"></div>
+                    <textarea x-ref="newContent" name="content" rows="10" class="hidden" placeholder="Lesson content (HTML supported)"
                               :required="newType !== 'scorm'"></textarea>
                 </div>
                 <div class="flex justify-end">
@@ -255,36 +304,85 @@
                     </div>
                     <div class="divide-y divide-gray-50">
                         @foreach($course->quiz->questions as $qIndex => $question)
-                            <div class="px-6 py-4">
-                                <div class="flex items-start justify-between mb-2">
-                                    <div class="flex items-start gap-3">
-                                        <span class="text-xs text-gray-400 mt-1">Q{{ $qIndex + 1 }}</span>
-                                        <div>
-                                            <p class="font-medium text-gray-900">{{ $question->question }}</p>
-                                            <p class="text-xs text-gray-400">{{ ucfirst(str_replace('_', ' ', $question->question_type)) }} &middot; {{ $question->points }} pt{{ $question->points > 1 ? 's' : '' }}</p>
+                            <div class="px-6 py-4" x-data="{
+                                editingQ: false,
+                                qAnswers: @js($question->answers->map(fn($a) => ['text' => $a->answer_text, 'is_correct' => (bool)$a->is_correct])->values()),
+                                addQAnswer() { this.qAnswers.push({ text: '', is_correct: false }); },
+                                removeQAnswer(i) { this.qAnswers.splice(i, 1); }
+                            }">
+                                {{-- View mode --}}
+                                <div x-show="!editingQ">
+                                    <div class="flex items-start justify-between mb-2">
+                                        <div class="flex items-start gap-3">
+                                            <span class="text-xs text-gray-400 mt-1">Q{{ $qIndex + 1 }}</span>
+                                            <div>
+                                                <p class="font-medium text-gray-900">{{ $question->question }}</p>
+                                                <p class="text-xs text-gray-400">{{ ucfirst(str_replace('_', ' ', $question->question_type)) }} &middot; {{ $question->points }} pt{{ $question->points > 1 ? 's' : '' }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <button @click="editingQ = true" type="button" class="text-sm text-secondary hover:text-primary">Edit</button>
+                                            <form method="POST" action="{{ route('manage.courses.questions.destroy', [$course, $question]) }}"
+                                                  onsubmit="return confirm('Delete this question?')">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="text-sm text-red-500 hover:text-red-700">Delete</button>
+                                            </form>
                                         </div>
                                     </div>
-                                    <form method="POST" action="{{ route('manage.courses.questions.destroy', [$course, $question]) }}"
-                                          onsubmit="return confirm('Delete this question?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="text-sm text-red-500 hover:text-red-700">Delete</button>
+                                    <div class="ml-8 space-y-1">
+                                        @foreach($question->answers as $answer)
+                                            <div class="flex items-center gap-2 text-sm {{ $answer->is_correct ? 'text-green-700 font-medium' : 'text-gray-500' }}">
+                                                @if($answer->is_correct)
+                                                    <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                                @else
+                                                    <span class="w-4 h-4 rounded-full border border-gray-300 inline-block"></span>
+                                                @endif
+                                                {{ $answer->answer_text }}
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                    @if($question->explanation)
+                                        <p class="ml-8 mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded">{{ $question->explanation }}</p>
+                                    @endif
+                                </div>
+
+                                {{-- Edit mode --}}
+                                <div x-show="editingQ" x-cloak>
+                                    <form method="POST" action="{{ route('manage.courses.questions.update', [$course, $question]) }}" class="space-y-4">
+                                        @csrf @method('PUT')
+                                        <textarea name="question" rows="2" required class="input">{{ $question->question }}</textarea>
+                                        <div class="grid grid-cols-3 gap-4">
+                                            <select name="question_type" class="input">
+                                                <option value="multiple_choice" {{ $question->question_type === 'multiple_choice' ? 'selected' : '' }}>Multiple Choice</option>
+                                                <option value="true_false" {{ $question->question_type === 'true_false' ? 'selected' : '' }}>True / False</option>
+                                                <option value="multi_select" {{ $question->question_type === 'multi_select' ? 'selected' : '' }}>Multi-Select</option>
+                                            </select>
+                                            <input type="number" name="points" value="{{ $question->points }}" min="1" class="input" placeholder="Points">
+                                            <input type="text" name="explanation" value="{{ $question->explanation }}" class="input" placeholder="Explanation (optional)">
+                                        </div>
+                                        <div>
+                                            <label class="label">Answers</label>
+                                            <template x-for="(ans, ai) in qAnswers" :key="ai">
+                                                <div class="flex items-center gap-3 mb-2">
+                                                    <input type="text" :name="'answers[' + ai + '][text]'" x-model="ans.text" required class="input flex-1" placeholder="Answer text">
+                                                    <label class="flex items-center gap-1 text-sm text-gray-600 flex-shrink-0">
+                                                        <input type="checkbox" :name="'answers[' + ai + '][is_correct]'" value="1" x-model="ans.is_correct"
+                                                               class="rounded border-gray-300 text-primary focus:ring-primary">
+                                                        Correct
+                                                    </label>
+                                                    <button type="button" @click="removeQAnswer(ai)" x-show="qAnswers.length > 2" class="text-red-400 hover:text-red-600">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                    </button>
+                                                </div>
+                                            </template>
+                                            <button type="button" @click="addQAnswer()" class="text-sm text-secondary hover:text-primary mt-1">+ Add Answer</button>
+                                        </div>
+                                        <div class="flex justify-end gap-3">
+                                            <button @click="editingQ = false" type="button" class="text-sm text-gray-500">Cancel</button>
+                                            <button type="submit" class="btn-primary text-sm">Update Question</button>
+                                        </div>
                                     </form>
                                 </div>
-                                <div class="ml-8 space-y-1">
-                                    @foreach($question->answers as $answer)
-                                        <div class="flex items-center gap-2 text-sm {{ $answer->is_correct ? 'text-green-700 font-medium' : 'text-gray-500' }}">
-                                            @if($answer->is_correct)
-                                                <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                                            @else
-                                                <span class="w-4 h-4 rounded-full border border-gray-300 inline-block"></span>
-                                            @endif
-                                            {{ $answer->answer_text }}
-                                        </div>
-                                    @endforeach
-                                </div>
-                                @if($question->explanation)
-                                    <p class="ml-8 mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded">{{ $question->explanation }}</p>
-                                @endif
                             </div>
                         @endforeach
                     </div>
@@ -292,7 +390,21 @@
             @endif
 
             {{-- Add question --}}
-            <div class="card p-6" x-data="questionForm()">
+            <div class="card p-6" x-data="{
+                type: 'multiple_choice',
+                answers: [
+                    { text: '', is_correct: false },
+                    { text: '', is_correct: false },
+                    { text: '', is_correct: false },
+                    { text: '', is_correct: false },
+                ],
+                addAnswer() {
+                    this.answers.push({ text: '', is_correct: false });
+                },
+                removeAnswer(index) {
+                    this.answers.splice(index, 1);
+                }
+            }">
                 <h2 class="font-semibold text-gray-900 mb-4">Add Question</h2>
                 <form method="POST" action="{{ route('manage.courses.questions.store', $course) }}" class="space-y-4">
                     @csrf
@@ -337,24 +449,4 @@
         @endif
     </div>
 </div>
-
-<script>
-function questionForm() {
-    return {
-        type: 'multiple_choice',
-        answers: [
-            { text: '', is_correct: false },
-            { text: '', is_correct: false },
-            { text: '', is_correct: false },
-            { text: '', is_correct: false },
-        ],
-        addAnswer() {
-            this.answers.push({ text: '', is_correct: false });
-        },
-        removeAnswer(index) {
-            this.answers.splice(index, 1);
-        }
-    }
-}
-</script>
 @endsection

@@ -292,6 +292,66 @@ class ClientCourseController extends Controller
         return back()->with('success', 'Question deleted.');
     }
 
+    public function updateQuestion(Request $request, Course $course, QuizQuestion $question)
+    {
+        $this->authorizeTenantCourse($course);
+
+        $validated = $request->validate([
+            'question' => 'required|string|max:2000',
+            'question_type' => 'required|in:multiple_choice,true_false,multi_select',
+            'explanation' => 'nullable|string|max:2000',
+            'points' => 'required|integer|min:1',
+            'answers' => 'required|array|min:2',
+            'answers.*.text' => 'required|string|max:500',
+            'answers.*.is_correct' => 'boolean',
+        ]);
+
+        $question->update([
+            'question' => $validated['question'],
+            'question_type' => $validated['question_type'],
+            'explanation' => $validated['explanation'],
+            'points' => $validated['points'],
+        ]);
+
+        // Replace all answers
+        $question->answers()->delete();
+        foreach ($validated['answers'] as $index => $answerData) {
+            $question->answers()->create([
+                'answer_text' => $answerData['text'],
+                'is_correct' => !empty($answerData['is_correct']),
+                'sort_order' => $index,
+            ]);
+        }
+
+        return back()->with('success', 'Question updated.');
+    }
+
+    public function reorderLessons(Request $request, Course $course)
+    {
+        $this->authorizeTenantCourse($course);
+
+        $validated = $request->validate([
+            'order' => 'required|array',
+            'order.*' => 'integer|exists:lessons,id',
+        ]);
+
+        foreach ($validated['order'] as $index => $lessonId) {
+            Lesson::where('id', $lessonId)->where('course_id', $course->id)
+                ->update(['sort_order' => $index]);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    public function preview(Course $course)
+    {
+        $this->authorizeTenantCourse($course);
+
+        $course->load(['lessons' => fn($q) => $q->orderBy('sort_order'), 'quiz.questions.answers']);
+
+        return view('client.courses.preview', compact('course'));
+    }
+
     // ── Helpers ──
 
     private function getCategories(): array

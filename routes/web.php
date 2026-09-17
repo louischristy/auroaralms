@@ -161,6 +161,9 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::post('courses/{course}/quiz', [ClientCourseController::class, 'storeQuiz'])->name('courses.quiz.store');
         Route::post('courses/{course}/questions', [ClientCourseController::class, 'storeQuestion'])->name('courses.questions.store');
         Route::delete('courses/{course}/questions/{question}', [ClientCourseController::class, 'destroyQuestion'])->name('courses.questions.destroy');
+        Route::put('courses/{course}/questions/{question}', [ClientCourseController::class, 'updateQuestion'])->name('courses.questions.update');
+        Route::post('courses/{course}/lessons/reorder', [ClientCourseController::class, 'reorderLessons'])->name('courses.lessons.reorder');
+        Route::get('courses/{course}/preview', [ClientCourseController::class, 'preview'])->name('courses.preview');
     });
 
     // ── Manager Routes ──
