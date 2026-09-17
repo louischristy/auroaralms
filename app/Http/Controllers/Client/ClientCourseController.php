@@ -17,7 +17,7 @@ class ClientCourseController extends Controller
 {
     private function tenantId(): ?int
     {
-        return app('current_tenant_id');
+        return app()->bound('current_tenant_id') ? app('current_tenant_id') : null;
     }
 
     private function authorizeTenantCourse(Course $course): void
