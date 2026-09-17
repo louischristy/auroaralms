@@ -247,7 +247,7 @@ class CourseController extends Controller
 
             if ($question->question_type === 'multi_select') {
                 $selectedIds = $request->input($inputKey, []);
-                $correctIds = $question->correctAnswers()->pluck('id')->toArray();
+                $correctIds = $question->answers->where('is_correct', true)->pluck('id')->toArray();
                 $selectedSorted = collect($selectedIds)->map(fn($v) => (int) $v)->sort()->values()->toArray();
                 sort($correctIds);
                 $isCorrect = $selectedSorted === $correctIds;
@@ -260,10 +260,10 @@ class CourseController extends Controller
                 ]);
             } else {
                 $answerId = $request->input($inputKey);
-                $isCorrect = $answerId && $question->answers()
-                    ->where('id', $answerId)
+                $isCorrect = $answerId && $question->answers
+                    ->where('id', (int) $answerId)
                     ->where('is_correct', true)
-                    ->exists();
+                    ->isNotEmpty();
 
                 QuizResponse::create([
                     'attempt_id' => $attempt->id,
