@@ -17,7 +17,40 @@
         </div>
     @endif
 
-    <div x-data="loginForm()">
+    <div x-data="{
+        email: {{ Js::from(old('email', '')) }},
+        ssoProviders: [],
+        forceSso: false,
+        lastChecked: '',
+        async checkSso() {
+            if (!this.email || !this.email.includes('@') || this.email === this.lastChecked) return;
+            this.lastChecked = this.email;
+            try {
+                const res = await fetch({{ Js::from(route('login.check-sso')) }}, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ email: this.email }),
+                });
+                const data = await res.json();
+                if (data.sso) {
+                    this.ssoProviders = data.providers;
+                    this.forceSso = data.force_sso;
+                } else {
+                    this.ssoProviders = [];
+                    this.forceSso = false;
+                }
+            } catch (e) {
+                console.error('SSO check failed', e);
+            }
+        },
+        handleSubmit(event) {
+            if (this.forceSso) { event.preventDefault(); }
+        }
+    }">
         <form method="POST" action="{{ route('login') }}" class="space-y-5" @submit="handleSubmit($event)">
             @csrf
 
@@ -32,7 +65,7 @@
                 @enderror
             </div>
 
-            {{-- SSO buttons (shown when detected) --}}
+            {{-- SSO buttons --}}
             <div x-show="ssoProviders.length > 0" x-cloak class="space-y-3">
                 <div class="relative">
                     <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-200"></div></div>
@@ -68,7 +101,7 @@
                 <div class="relative flex justify-center text-xs uppercase"><span class="bg-white px-2 text-gray-400">Or with password</span></div>
             </div>
 
-            {{-- Password field (hidden only when force_sso) --}}
+            {{-- Password field --}}
             <div x-show="!forceSso">
                 <label for="password" class="label">Password</label>
                 <input type="password" id="password" name="password"
@@ -96,49 +129,4 @@
             </div>
         </form>
     </div>
-
-    <script>
-    function loginForm() {
-        return {
-            email: @json(old('email', '')),
-            ssoProviders: [],
-            forceSso: false,
-            lastChecked: '',
-
-            async checkSso() {
-                if (!this.email || !this.email.includes('@') || this.email === this.lastChecked) return;
-                this.lastChecked = this.email;
-
-                try {
-                    const res = await fetch(@json(route('login.check-sso')), {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json',
-                        },
-                        body: JSON.stringify({ email: this.email }),
-                    });
-                    const data = await res.json();
-
-                    if (data.sso) {
-                        this.ssoProviders = data.providers;
-                        this.forceSso = data.force_sso;
-                    } else {
-                        this.ssoProviders = [];
-                        this.forceSso = false;
-                    }
-                } catch (e) {
-                    console.error('SSO check failed', e);
-                }
-            },
-
-            handleSubmit(event) {
-                if (this.forceSso) {
-                    event.preventDefault();
-                }
-            }
-        }
-    }
-    </script>
 @endsection
