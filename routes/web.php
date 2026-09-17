@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\ScormApiController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\DashboardController;
@@ -43,6 +44,11 @@ Route::middleware('guest')->group(function () {
 Route::middleware(['auth', 'resolve.tenant', 'inject.branding'])->group(function () {
     Route::post('logout', [LoginController::class, 'logout'])->name('logout');
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Notifications
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
 
     // Profile
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Models\Policy;
 use App\Models\Tenant;
+use App\Models\User;
+use App\Notifications\PolicyPushed;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -168,8 +170,22 @@ class PolicyController extends Controller
             'published_at' => now(),
         ]);
 
-        // TODO: Create policy assignment records and send notifications
+        // Send notifications to affected users
+        $tenantId = $policy->tenant_id;
+        if ($request->boolean('push_to_all')) {
+            $users = User::where('tenant_id', $tenantId)->get();
+        } elseif ($request->filled('user_ids')) {
+            $users = User::whereIn('id', $request->user_ids)
+                ->where('tenant_id', $tenantId)
+                ->get();
+        } else {
+            $users = User::where('tenant_id', $tenantId)->get();
+        }
 
-        return back()->with('success', 'Policy pushed to users successfully.');
+        foreach ($users as $user) {
+            $user->notify(new PolicyPushed($policy));
+        }
+
+        return back()->with('success', "Policy pushed to {$users->count()} user(s) successfully.");
     }
 }
