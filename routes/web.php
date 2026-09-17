@@ -9,6 +9,8 @@ use App\Http\Controllers\Platform\PlatformSettingController;
 use App\Http\Controllers\Platform\PlatformUserController;
 use App\Http\Controllers\Platform\CourseManagementController;
 use App\Http\Controllers\Platform\CourseCategoryController;
+use App\Http\Controllers\Platform\ReportController as PlatformReportController;
+use App\Http\Controllers\Client\ReportController as ClientReportController;
 use App\Http\Controllers\Client\UserController;
 use App\Http\Controllers\Client\DepartmentController;
 use App\Http\Controllers\Client\ClientCourseController;
@@ -59,6 +61,12 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding'])->group(function
         // All Users (cross-tenant view)
         Route::get('users', [PlatformUserController::class, 'index'])->name('users.index');
 
+        // Reports & Analytics
+        Route::get('reports', [PlatformReportController::class, 'index'])->name('reports.index');
+        Route::get('reports/tenant-completion', [PlatformReportController::class, 'tenantCompletion'])->name('reports.tenant-completion');
+        Route::get('reports/course-performance', [PlatformReportController::class, 'coursePerformance'])->name('reports.course-performance');
+        Route::get('reports/quiz-analytics', [PlatformReportController::class, 'quizAnalytics'])->name('reports.quiz-analytics');
+
         // Course Categories
         Route::get('categories', [CourseCategoryController::class, 'index'])->name('categories.index');
         Route::post('categories', [CourseCategoryController::class, 'store'])->name('categories.store');
@@ -88,6 +96,12 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding'])->group(function
 
         Route::resource('phishing', PhishingController::class)->except(['edit', 'update', 'destroy']);
         Route::post('phishing/{campaign}/simulate', [PhishingController::class, 'simulate'])->name('phishing.simulate');
+
+        // Reports
+        Route::get('reports', [ClientReportController::class, 'index'])->name('reports.index');
+        Route::get('reports/user-progress', [ClientReportController::class, 'userProgress'])->name('reports.user-progress');
+        Route::get('reports/department-breakdown', [ClientReportController::class, 'departmentBreakdown'])->name('reports.department-breakdown');
+        Route::get('reports/overdue-training', [ClientReportController::class, 'overdueTraining'])->name('reports.overdue-training');
 
         // Client Course Builder
         Route::resource('courses', ClientCourseController::class);
