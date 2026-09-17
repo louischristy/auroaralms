@@ -17,7 +17,7 @@
             </p>
 
             <div class="flex justify-center p-4 bg-white rounded-lg border border-gray-200">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode($qrUri) }}" alt="2FA QR Code" class="w-48 h-48">
+                {!! $qrSvg !!}
             </div>
         </div>
 

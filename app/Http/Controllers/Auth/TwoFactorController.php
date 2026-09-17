@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Services\AuditLogService;
+use App\Services\QrCodeGenerator;
 use App\Services\TotpService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -30,8 +31,9 @@ class TwoFactorController extends Controller
         session(['2fa_setup_secret' => $secret]);
 
         $qrUri = $this->totp->getQrUri($secret, $user->email);
+        $qrSvg = QrCodeGenerator::svg($qrUri, 200);
 
-        return view('auth.two-factor.setup', compact('secret', 'qrUri'));
+        return view('auth.two-factor.setup', compact('secret', 'qrUri', 'qrSvg'));
     }
 
     /**
