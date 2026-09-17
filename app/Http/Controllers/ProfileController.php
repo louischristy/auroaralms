@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AuditLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -34,10 +35,13 @@ class ProfileController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
 
-        Auth::user()->update([
+        $user = Auth::user();
+        $user->update([
             'password' => Hash::make($request->password),
             'must_change_password' => false,
         ]);
+
+        AuditLogService::log('password_changed', $user);
 
         return back()->with('success', 'Password changed successfully.');
     }

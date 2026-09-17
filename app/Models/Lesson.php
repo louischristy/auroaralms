@@ -6,9 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use App\Traits\Auditable;
 
 class Lesson extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'course_id', 'title', 'slug', 'content', 'content_type',
         'video_url', 'duration_minutes', 'sort_order', 'is_active',

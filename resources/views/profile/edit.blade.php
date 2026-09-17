@@ -65,6 +65,17 @@
         </div>
     </form>
 
+    {{-- Active Sessions --}}
+    <div class="card p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-medium text-gray-800">Active Sessions</h3>
+                <p class="text-sm text-gray-500 mt-1">Manage your logged-in devices and sessions.</p>
+            </div>
+            <a href="{{ route('sessions.index') }}" class="btn-outline btn-sm">View Sessions &rarr;</a>
+        </div>
+    </div>
+
     {{-- Two-Factor Authentication --}}
     <div class="card p-6 space-y-4">
         <div class="flex items-center justify-between">

@@ -8,6 +8,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Platform\AuditLogController;
 use App\Http\Controllers\Platform\TenantController;
 use App\Http\Controllers\Platform\PlatformSettingController;
 use App\Http\Controllers\Platform\PlatformUserController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\Employee\CourseController;
 use App\Http\Controllers\Employee\LeaderboardController;
 use App\Http\Controllers\Employee\PolicyAcknowledgmentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SessionController;
 use Illuminate\Support\Facades\Route;
 
 // ── Public ──
@@ -76,6 +78,11 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
     Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 
+    // Active Sessions
+    Route::get('sessions', [SessionController::class, 'index'])->name('sessions.index');
+    Route::delete('sessions/{session}', [SessionController::class, 'destroy'])->name('sessions.destroy');
+    Route::delete('sessions', [SessionController::class, 'destroyAll'])->name('sessions.destroy-all');
+
     // ── Platform Admin Routes ──
     Route::middleware('role:platform-admin')->prefix('platform')->name('platform.')->group(function () {
         // Tenants
@@ -94,12 +101,17 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
 
         // All Users (cross-tenant view)
         Route::get('users', [PlatformUserController::class, 'index'])->name('users.index');
+        Route::post('users/{user}/force-logout', [SessionController::class, 'forceLogout'])->name('users.force-logout');
 
         // Reports & Analytics
         Route::get('reports', [PlatformReportController::class, 'index'])->name('reports.index');
         Route::get('reports/tenant-completion', [PlatformReportController::class, 'tenantCompletion'])->name('reports.tenant-completion');
         Route::get('reports/course-performance', [PlatformReportController::class, 'coursePerformance'])->name('reports.course-performance');
         Route::get('reports/quiz-analytics', [PlatformReportController::class, 'quizAnalytics'])->name('reports.quiz-analytics');
+
+        // Audit Logs
+        Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+        Route::get('audit-logs/{auditLog}', [AuditLogController::class, 'show'])->name('audit-logs.show');
 
         // Course Categories
         Route::get('categories', [CourseCategoryController::class, 'index'])->name('categories.index');
@@ -122,9 +134,13 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
     // ── Client Admin Routes ──
     Route::middleware('role:platform-admin,client-admin')->prefix('manage')->name('manage.')->group(function () {
         Route::resource('users', UserController::class);
+        Route::post('users/{user}/force-logout', [SessionController::class, 'forceLogout'])->name('users.force-logout');
         Route::post('users/import', [UserController::class, 'import'])->name('users.import');
         Route::get('users/export', [UserController::class, 'export'])->name('users.export');
         Route::resource('departments', DepartmentController::class);
+        Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+        Route::get('audit-logs/{auditLog}', [AuditLogController::class, 'show'])->name('audit-logs.show');
+
         Route::resource('policies', PolicyController::class);
         Route::post('policies/{policy}/push', [PolicyController::class, 'push'])->name('policies.push');
 

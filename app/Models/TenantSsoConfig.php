@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\Auditable;
 
 class TenantSsoConfig extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'tenant_id', 'provider', 'client_id', 'client_secret',
         'tenant_identifier', 'allowed_domains', 'is_active',
