@@ -134,19 +134,33 @@
 
                             {{-- Edit form --}}
                             <div x-show="editing" x-cloak>
-                                <form method="POST" action="{{ route('manage.courses.lessons.update', [$course, $lesson]) }}" class="space-y-4">
+                                <form method="POST" action="{{ route('manage.courses.lessons.update', [$course, $lesson]) }}" class="space-y-4"
+                                      enctype="multipart/form-data" x-data="{ editType: '{{ $lesson->content_type }}' }">
                                     @csrf @method('PUT')
                                     <input type="text" name="title" value="{{ $lesson->title }}" required class="input" placeholder="Lesson title">
                                     <div class="grid grid-cols-2 gap-4">
-                                        <select name="content_type" class="input">
+                                        <select name="content_type" class="input" x-model="editType">
                                             <option value="text" {{ $lesson->content_type === 'text' ? 'selected' : '' }}>Text</option>
                                             <option value="video" {{ $lesson->content_type === 'video' ? 'selected' : '' }}>Video</option>
                                             <option value="interactive" {{ $lesson->content_type === 'interactive' ? 'selected' : '' }}>Interactive</option>
+                                            <option value="scorm" {{ $lesson->content_type === 'scorm' ? 'selected' : '' }}>SCORM Package</option>
                                         </select>
                                         <input type="number" name="duration_minutes" value="{{ $lesson->duration_minutes }}" min="1" class="input" placeholder="Minutes">
                                     </div>
-                                    <input type="url" name="video_url" value="{{ $lesson->video_url }}" class="input" placeholder="Video URL (optional)">
-                                    <textarea name="content" rows="8" required class="input font-mono text-sm">{{ $lesson->content }}</textarea>
+                                    <div x-show="editType !== 'scorm'">
+                                        <input type="url" name="video_url" value="{{ $lesson->video_url }}" class="input" placeholder="Video URL (optional)">
+                                    </div>
+                                    <div x-show="editType === 'scorm'" x-cloak class="space-y-2">
+                                        @if($lesson->scorm_package_path)
+                                            <p class="text-xs text-green-600">✓ SCORM {{ $lesson->scorm_version }} package uploaded</p>
+                                        @endif
+                                        <input type="file" name="scorm_package" accept=".zip" class="input">
+                                        <p class="text-xs text-gray-400">Upload a new SCORM package to replace.</p>
+                                    </div>
+                                    <div x-show="editType !== 'scorm'">
+                                        <textarea name="content" rows="8" class="input font-mono text-sm"
+                                                  :required="editType !== 'scorm'">{{ $lesson->content }}</textarea>
+                                    </div>
                                     <div class="flex justify-end gap-3">
                                         <button @click="editing = false" type="button" class="text-sm text-gray-500">Cancel</button>
                                         <button type="submit" class="btn-primary text-sm">Update Lesson</button>
@@ -162,19 +176,31 @@
         {{-- Add lesson form --}}
         <div class="card p-6">
             <h2 class="font-semibold text-gray-900 mb-4">Add New Lesson</h2>
-            <form method="POST" action="{{ route('manage.courses.lessons.store', $course) }}" class="space-y-4">
+            <form method="POST" action="{{ route('manage.courses.lessons.store', $course) }}" class="space-y-4" enctype="multipart/form-data"
+                  x-data="{ newType: 'text' }">
                 @csrf
                 <input type="text" name="title" required class="input" placeholder="Lesson title">
                 <div class="grid grid-cols-2 gap-4">
-                    <select name="content_type" class="input">
+                    <select name="content_type" class="input" x-model="newType">
                         <option value="text">Text</option>
                         <option value="video">Video</option>
                         <option value="interactive">Interactive</option>
+                        <option value="scorm">SCORM Package</option>
                     </select>
                     <input type="number" name="duration_minutes" value="5" min="1" class="input" placeholder="Duration (min)">
                 </div>
-                <input type="url" name="video_url" class="input" placeholder="Video URL (YouTube/Vimeo embed, optional)">
-                <textarea name="content" rows="10" required class="input font-mono text-sm" placeholder="Lesson content (HTML supported)"></textarea>
+                <div x-show="newType !== 'scorm'">
+                    <input type="url" name="video_url" class="input" placeholder="Video URL (YouTube/Vimeo embed, optional)">
+                </div>
+                <div x-show="newType === 'scorm'" x-cloak class="space-y-2">
+                    <label class="label">SCORM Package (.zip)</label>
+                    <input type="file" name="scorm_package" accept=".zip" class="input">
+                    <p class="text-xs text-gray-400">Upload a SCORM 1.2 or 2004 package (ZIP). Max 100 MB.</p>
+                </div>
+                <div x-show="newType !== 'scorm'">
+                    <textarea name="content" rows="10" class="input font-mono text-sm" placeholder="Lesson content (HTML supported)"
+                              :required="newType !== 'scorm'"></textarea>
+                </div>
                 <div class="flex justify-end">
                     <button type="submit" class="btn-primary text-sm">Add Lesson</button>
                 </div>

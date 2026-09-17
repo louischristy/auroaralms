@@ -122,6 +122,7 @@ jobs:
             --exclude 'storage/framework/sessions/' \
             --exclude 'storage/framework/views/' \
             --exclude 'public/uploads/' \
+            --exclude 'storage/app/public/scorm/' \
             ./ ${{ secrets.BLUEHOST_USERNAME }}@${{ secrets.BLUEHOST_HOST }}:${{ secrets.BLUEHOST_REMOTE_PATH }}
 
       - name: Post-deploy commands
@@ -144,7 +145,11 @@ jobs:
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
+            # Storage link for SCORM packages
+            php artisan storage:link 2>/dev/null || true
+            mkdir -p storage/app/public/scorm
             # Sync public assets to served site folder
-            cp -r public/build public/images ~/public_html/website_0b6edf36/ 2>/dev/null || true
+            cp -r public/build public/images public/js ~/public_html/website_0b6edf36/ 2>/dev/null || true
             mkdir -p public/uploads/branding
-            [ -L ~/public_html/website_0b6edf36/uploads ] || ln -s $(pwd)/public/uploads ~/public_html/website_0b6edf36/uploads 2>/dev/null || cp -r public/uploads ~/public_html/website_0b6edf36/ 2>/dev/null || true
+            [ -L ~/public_html/website_0b6edf36/uploads ] || ln -s $(pwd)/public/uploads ~/public_html/website_0b6edf36/uploads 2>/dev/null || true
+            [ -L ~/public_html/website_0b6edf36/storage ] || ln -s $(pwd)/storage/app/public ~/public_html/website_0b6edf36/storage 2>/dev/null || true

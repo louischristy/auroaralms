@@ -11,6 +11,7 @@ use App\Models\QuizQuestion;
 use App\Models\QuizAnswer;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
+use App\Services\ScormService;
 use Illuminate\Support\Str;
 
 class CourseManagementController extends Controller
@@ -117,16 +118,26 @@ class CourseManagementController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'content' => 'required|string',
-            'content_type' => 'required|in:text,video,interactive',
+            'content' => 'nullable|string',
+            'content_type' => 'required|in:text,video,interactive,scorm',
             'video_url' => 'nullable|url|max:500',
             'duration_minutes' => 'required|integer|min:1',
+            'scorm_package' => 'nullable|file|mimes:zip|max:102400',
         ]);
 
+        unset($validated['scorm_package']);
         $validated['slug'] = Str::slug($validated['title']);
         $validated['sort_order'] = $course->lessons()->max('sort_order') + 1;
+        if ($validated['content_type'] !== 'scorm') {
+            $validated['content'] = $validated['content'] ?? '';
+        }
 
-        $course->lessons()->create($validated);
+        $lesson = $course->lessons()->create($validated);
+
+        // Handle SCORM package upload
+        if ($request->hasFile('scorm_package') && $validated['content_type'] === 'scorm') {
+            $this->processScormUpload($request->file('scorm_package'), $course, $lesson);
+        }
 
         return back()->with('success', 'Lesson added.');
     }
@@ -135,15 +146,35 @@ class CourseManagementController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'content' => 'required|string',
-            'content_type' => 'required|in:text,video,interactive',
+            'content' => 'nullable|string',
+            'content_type' => 'required|in:text,video,interactive,scorm',
             'video_url' => 'nullable|url|max:500',
             'duration_minutes' => 'required|integer|min:1',
+            'scorm_package' => 'nullable|file|mimes:zip|max:102400',
         ]);
 
+        unset($validated['scorm_package']);
         $lesson->update($validated);
 
+        // Handle SCORM package re-upload
+        if ($request->hasFile('scorm_package') && $validated['content_type'] === 'scorm') {
+            $this->processScormUpload($request->file('scorm_package'), $course, $lesson);
+        }
+
         return back()->with('success', 'Lesson updated.');
+    }
+
+    private function processScormUpload($file, Course $course, Lesson $lesson): void
+    {
+        $scormService = new ScormService();
+        $result = $scormService->extractPackage($file, $course->id, $lesson->id);
+
+        $lesson->update([
+            'scorm_version'      => $result['version'],
+            'scorm_entry_point'  => $result['entry_point'],
+            'scorm_package_path' => $result['package_path'],
+            'content'            => '<p>This lesson uses a SCORM package. Launch the content above to begin.</p>',
+        ]);
     }
 
     public function destroyLesson(Course $course, Lesson $lesson)

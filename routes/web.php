@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ScormApiController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
@@ -118,6 +119,11 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding'])->group(function
         Route::get('members', [UserController::class, 'teamMembers'])->name('members');
         Route::get('reports', [DashboardController::class, 'teamReports'])->name('reports');
     });
+
+    // ── SCORM API (authenticated, CSRF-protected) ──
+    Route::post('api/scorm/{lesson}/initialize', [ScormApiController::class, 'initialize'])->name('scorm.initialize');
+    Route::post('api/scorm/{lesson}/commit', [ScormApiController::class, 'commit'])->name('scorm.commit');
+    Route::post('api/scorm/{lesson}/finish', [ScormApiController::class, 'finish'])->name('scorm.finish');
 
     // ── Employee Routes (all authenticated users) ──
     Route::prefix('learn')->name('learn.')->group(function () {

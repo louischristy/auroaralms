@@ -44,7 +44,32 @@
             <p class="text-sm text-gray-400 mt-1">{{ $lesson->duration_minutes }} min &middot; {{ ucfirst($lesson->content_type) }}</p>
         </div>
 
-        @if($lesson->content_type === 'video' && $lesson->video_url)
+        @if($lesson->content_type === 'scorm' && $lesson->scorm_package_path)
+            {{-- SCORM Player --}}
+            <div class="px-6 py-4 bg-blue-50 border-b border-blue-100">
+                <div class="flex items-center gap-2 text-sm text-blue-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    SCORM {{ $lesson->scorm_version }} content — your progress is tracked automatically.
+                </div>
+            </div>
+            <script>
+                window.SCORM_CONFIG = {
+                    lessonId: {{ $lesson->id }},
+                    csrfToken: '{{ csrf_token() }}',
+                    baseUrl: '{{ rtrim(config("app.url"), "/") }}'
+                };
+            </script>
+            <script src="{{ asset('js/scorm-rte.js') }}"></script>
+            <div style="height: 600px; background: #f9fafb;">
+                <iframe id="scorm-frame"
+                        src="{{ asset('storage/' . $lesson->scorm_package_path . '/' . $lesson->scorm_entry_point) }}"
+                        class="w-full h-full border-0"
+                        allow="fullscreen"
+                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+            </div>
+        @elseif($lesson->content_type === 'video' && $lesson->video_url)
             <div class="aspect-video bg-black">
                 <iframe src="{{ $lesson->video_url }}" class="w-full h-full" frameborder="0"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -52,9 +77,11 @@
             </div>
         @endif
 
+        @if($lesson->content_type !== 'scorm')
         <div class="px-6 py-6 prose prose-sm max-w-none text-gray-700">
             {!! $lesson->content !!}
         </div>
+        @endif
     </div>
 
     {{-- Navigation --}}
@@ -69,13 +96,15 @@
             @endif
         </div>
         <div class="flex items-center gap-3">
-            @if(!$isCompleted)
+            @if(!$isCompleted && $lesson->content_type !== 'scorm')
                 <form method="POST" action="{{ route('learn.courses.complete-lesson', [$course, $lesson]) }}">
                     @csrf
                     <button type="submit" class="btn-primary text-sm">
                         Mark as Complete & Continue
                     </button>
                 </form>
+            @elseif(!$isCompleted && $lesson->content_type === 'scorm')
+                <span class="text-sm text-gray-500 italic">Completion tracked by SCORM content</span>
             @else
                 <span class="inline-flex items-center gap-1 text-green-600 text-sm font-medium">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>

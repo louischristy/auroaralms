@@ -12,6 +12,7 @@ class Lesson extends Model
     protected $fillable = [
         'course_id', 'title', 'slug', 'content', 'content_type',
         'video_url', 'duration_minutes', 'sort_order', 'is_active',
+        'scorm_version', 'scorm_entry_point', 'scorm_package_path',
     ];
 
     protected $casts = [
