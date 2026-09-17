@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             PlatformSettingsSeeder::class,
             DemoTenantSeeder::class,
+            CourseCategorySeeder::class,
             CourseSeeder::class,
             CourseSeederBatch2::class,
             CourseSeederBatch3::class,

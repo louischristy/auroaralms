@@ -8,6 +8,7 @@ use App\Http\Controllers\Platform\TenantController;
 use App\Http\Controllers\Platform\PlatformSettingController;
 use App\Http\Controllers\Platform\PlatformUserController;
 use App\Http\Controllers\Platform\CourseManagementController;
+use App\Http\Controllers\Platform\CourseCategoryController;
 use App\Http\Controllers\Client\UserController;
 use App\Http\Controllers\Client\DepartmentController;
 use App\Http\Controllers\Client\ClientCourseController;
@@ -57,6 +58,12 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding'])->group(function
 
         // All Users (cross-tenant view)
         Route::get('users', [PlatformUserController::class, 'index'])->name('users.index');
+
+        // Course Categories
+        Route::get('categories', [CourseCategoryController::class, 'index'])->name('categories.index');
+        Route::post('categories', [CourseCategoryController::class, 'store'])->name('categories.store');
+        Route::put('categories/{category}', [CourseCategoryController::class, 'update'])->name('categories.update');
+        Route::delete('categories/{category}', [CourseCategoryController::class, 'destroy'])->name('categories.destroy');
 
         // Course Management (catalog)
         Route::resource('courses', CourseManagementController::class);

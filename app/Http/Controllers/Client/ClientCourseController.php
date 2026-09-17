@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Models\CourseCategory;
 use App\Models\Lesson;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
@@ -266,17 +267,7 @@ class ClientCourseController extends Controller
 
     private function getCategories(): array
     {
-        return [
-            'Phishing & Email Security',
-            'Social Engineering',
-            'Password & Authentication',
-            'Data Protection & Privacy',
-            'Malware & Ransomware',
-            'Mobile & Remote Work Security',
-            'Physical Security & Workplace Safety',
-            'Incident Response & Compliance',
-            'Organization Specific',
-        ];
+        return CourseCategory::active()->ordered()->pluck('name')->toArray();
     }
 
     private function parseObjectives(?string $text): ?array

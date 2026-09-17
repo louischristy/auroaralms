@@ -134,6 +134,7 @@ jobs:
           script: |
             cd ${{ secrets.BLUEHOST_REMOTE_PATH }}
             php artisan migrate --force
+            php artisan db:seed --class=CourseCategorySeeder --force
             php artisan db:seed --class=CourseSeeder --force
             php artisan db:seed --class=CourseSeederBatch2 --force
             php artisan db:seed --class=CourseSeederBatch3 --force
