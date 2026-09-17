@@ -78,7 +78,7 @@
         @endif
 
         @if($lesson->content_type !== 'scorm')
-        <div class="px-6 py-6 prose prose-sm max-w-none text-gray-700">
+        <div class="px-6 py-8 lesson-content">
             {!! $lesson->content !!}
         </div>
         @endif

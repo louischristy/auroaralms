@@ -63,4 +63,70 @@
     .badge-info {
         @apply badge bg-blue-100 text-blue-800;
     }
+
+    /* Prose-like typography for lesson content */
+    .lesson-content {
+        @apply text-gray-700 leading-relaxed text-base;
+    }
+    .lesson-content h1 {
+        @apply text-2xl font-bold text-gray-900 mt-8 mb-4 pb-2 border-b border-gray-200;
+    }
+    .lesson-content h2 {
+        @apply text-xl font-bold text-gray-900 mt-8 mb-3;
+    }
+    .lesson-content h3 {
+        @apply text-lg font-semibold text-gray-800 mt-6 mb-2;
+    }
+    .lesson-content h4 {
+        @apply text-base font-semibold text-gray-800 mt-4 mb-2;
+    }
+    .lesson-content p {
+        @apply mb-4 leading-7;
+    }
+    .lesson-content ul {
+        @apply list-disc pl-6 mb-4 space-y-2;
+    }
+    .lesson-content ol {
+        @apply list-decimal pl-6 mb-4 space-y-2;
+    }
+    .lesson-content li {
+        @apply leading-7;
+    }
+    .lesson-content li > ul,
+    .lesson-content li > ol {
+        @apply mt-2 mb-0;
+    }
+    .lesson-content blockquote {
+        @apply border-l-4 border-blue-200 pl-4 py-1 my-4 text-gray-600 italic bg-gray-50 rounded-r-lg pr-4;
+    }
+    .lesson-content code {
+        @apply bg-gray-100 text-sm px-1.5 py-0.5 rounded font-mono text-red-600;
+    }
+    .lesson-content pre {
+        @apply bg-gray-900 text-gray-100 rounded-lg p-4 mb-4 overflow-x-auto text-sm;
+    }
+    .lesson-content pre code {
+        @apply bg-transparent text-gray-100 p-0;
+    }
+    .lesson-content a {
+        @apply text-secondary underline hover:text-primary;
+    }
+    .lesson-content img {
+        @apply rounded-lg my-4 max-w-full h-auto shadow-sm;
+    }
+    .lesson-content table {
+        @apply w-full border-collapse mb-4 text-sm;
+    }
+    .lesson-content th {
+        @apply bg-gray-50 text-left px-4 py-2 font-semibold text-gray-700 border border-gray-200;
+    }
+    .lesson-content td {
+        @apply px-4 py-2 border border-gray-200;
+    }
+    .lesson-content hr {
+        @apply my-8 border-gray-200;
+    }
+    .lesson-content strong {
+        @apply font-semibold text-gray-900;
+    }
 }
