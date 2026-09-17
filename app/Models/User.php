@@ -106,6 +106,16 @@ class User extends Authenticatable
         return $this->hasMany(PolicyAcknowledgment::class);
     }
 
+    public function quizAttempts(): HasMany
+    {
+        return $this->hasMany(QuizAttempt::class);
+    }
+
+    public function badges(): HasMany
+    {
+        return $this->hasMany(UserBadge::class);
+    }
+
     // ── Scopes ──
 
     public function scopeActive($query)

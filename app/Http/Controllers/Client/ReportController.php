@@ -9,6 +9,7 @@ use App\Models\Department;
 use App\Models\QuizAttempt;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -131,33 +132,28 @@ class ReportController extends Controller
      */
     public function overdueTraining(Request $request)
     {
-        $overdue = CourseEnrollment::whereNotNull('due_date')
+        $baseQuery = CourseEnrollment::whereNotNull('due_date')
             ->where('due_date', '<', now())
             ->where('status', '!=', 'completed')
             ->with(['user:id,name,email,department_id', 'user.department:id,name', 'course:id,title'])
-            ->orderBy('due_date')
-            ->paginate(30);
+            ->orderBy('due_date');
 
         if ($request->input('export') === 'csv') {
-            $all = CourseEnrollment::whereNotNull('due_date')
-                ->where('due_date', '<', now())
-                ->where('status', '!=', 'completed')
-                ->with(['user:id,name,email', 'course:id,title'])
-                ->orderBy('due_date')
-                ->get()
-                ->map(fn($e) => [
-                    'user' => $e->user->name,
-                    'email' => $e->user->email,
-                    'course' => $e->course->title,
-                    'due_date' => $e->due_date->format('Y-m-d'),
-                    'days_overdue' => now()->diffInDays($e->due_date),
-                    'progress' => $e->progress_percent . '%',
-                ]);
+            $all = (clone $baseQuery)->get()->map(fn($e) => [
+                'user' => $e->user->name,
+                'email' => $e->user->email,
+                'course' => $e->course->title,
+                'due_date' => $e->due_date->format('Y-m-d'),
+                'days_overdue' => now()->diffInDays($e->due_date),
+                'progress' => $e->progress_percent . '%',
+            ]);
 
             return $this->exportCsv('overdue-training', [
                 'User', 'Email', 'Course', 'Due Date', 'Days Overdue', 'Progress'
             ], $all->toArray());
         }
+
+        $overdue = $baseQuery->paginate(30);
 
         return view('client.reports.overdue-training', compact('overdue'));
     }

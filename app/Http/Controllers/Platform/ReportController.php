@@ -10,6 +10,7 @@ use App\Models\QuizAttempt;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -28,37 +29,40 @@ class ReportController extends Controller
         $from = $request->input('from', now()->subMonths(3)->toDateString());
         $to = $request->input('to', now()->toDateString());
 
-        $tenants = Tenant::where('is_active', true)
-            ->select('id', 'name')
-            ->withCount('users')
-            ->get();
+        $cacheKey = "report:tenant-completion:{$from}:{$to}";
+        $data = Cache::remember($cacheKey, 600, function () use ($from, $to) {
+            $tenants = Tenant::where('is_active', true)
+                ->select('id', 'name')
+                ->withCount('users')
+                ->get();
 
-        $enrollmentStats = CourseEnrollment::withoutTenantScope()
-            ->whereBetween('created_at', [$from, "$to 23:59:59"])
-            ->select(
-                'tenant_id',
-                DB::raw('COUNT(*) as enrolled'),
-                DB::raw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed"),
-                DB::raw("SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress"),
-                DB::raw("SUM(CASE WHEN due_date IS NOT NULL AND due_date < NOW() AND status != 'completed' THEN 1 ELSE 0 END) as overdue")
-            )
-            ->groupBy('tenant_id')
-            ->get()
-            ->keyBy('tenant_id');
+            $enrollmentStats = CourseEnrollment::withoutTenantScope()
+                ->whereBetween('created_at', [$from, "$to 23:59:59"])
+                ->select(
+                    'tenant_id',
+                    DB::raw('COUNT(*) as enrolled'),
+                    DB::raw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed"),
+                    DB::raw("SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress"),
+                    DB::raw("SUM(CASE WHEN due_date IS NOT NULL AND due_date < NOW() AND status != 'completed' THEN 1 ELSE 0 END) as overdue")
+                )
+                ->groupBy('tenant_id')
+                ->get()
+                ->keyBy('tenant_id');
 
-        $data = $tenants->map(function ($tenant) use ($enrollmentStats) {
-            $stats = $enrollmentStats->get($tenant->id);
-            return [
-                'tenant' => $tenant->name,
-                'users' => $tenant->users_count,
-                'enrolled' => $stats?->enrolled ?? 0,
-                'completed' => $stats?->completed ?? 0,
-                'in_progress' => $stats?->in_progress ?? 0,
-                'overdue' => $stats?->overdue ?? 0,
-                'completion_rate' => ($stats?->enrolled ?? 0) > 0
-                    ? round(($stats->completed / $stats->enrolled) * 100, 1) : 0,
-            ];
-        })->sortByDesc('completion_rate')->values();
+            return $tenants->map(function ($tenant) use ($enrollmentStats) {
+                $stats = $enrollmentStats->get($tenant->id);
+                return [
+                    'tenant' => $tenant->name,
+                    'users' => $tenant->users_count,
+                    'enrolled' => $stats?->enrolled ?? 0,
+                    'completed' => $stats?->completed ?? 0,
+                    'in_progress' => $stats?->in_progress ?? 0,
+                    'overdue' => $stats?->overdue ?? 0,
+                    'completion_rate' => ($stats?->enrolled ?? 0) > 0
+                        ? round(($stats->completed / $stats->enrolled) * 100, 1) : 0,
+                ];
+            })->sortByDesc('completion_rate')->values();
+        });
 
         if ($request->input('export') === 'csv') {
             return $this->exportCsv('tenant-completion', ['Tenant', 'Users', 'Enrolled', 'Completed', 'In Progress', 'Overdue', 'Completion %'], $data->toArray());

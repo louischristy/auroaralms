@@ -4,11 +4,10 @@ namespace App\Http\Controllers\Employee;
 
 use App\Http\Controllers\Controller;
 use App\Models\Badge;
-use App\Models\CourseEnrollment;
-use App\Models\QuizAttempt;
 use App\Models\UserBadge;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class LeaderboardController extends Controller
 {
@@ -17,38 +16,29 @@ class LeaderboardController extends Controller
         $currentUser = Auth::user();
         $tenantId = $currentUser->tenant_id;
 
-        // Get all active tenant users and compute their stats
-        $users = User::where('tenant_id', $tenantId)
-            ->where('is_active', true)
-            ->with('department')
-            ->get();
-
-        $leaderboard = $users->map(function ($user) {
-            $coursesCompleted = CourseEnrollment::withoutTenantScope()
-                ->where('user_id', $user->id)
-                ->where('status', 'completed')
-                ->count();
-            $passedQuizzes = QuizAttempt::where('user_id', $user->id)
-                ->where('passed', true)
-                ->count();
-            $badgesCount = UserBadge::withoutTenantScope()
-                ->where('user_id', $user->id)
-                ->count();
-
-            $user->courses_completed = $coursesCompleted;
-            $user->passed_quizzes = $passedQuizzes;
-            $user->badges_count = $badgesCount;
-            $user->total_points = ($coursesCompleted * 100) + ($passedQuizzes * 50) + ($badgesCount * 25);
-
-            return $user;
-        })
-        ->sortByDesc('total_points')
-        ->values();
-
-        // Add ranks
-        $leaderboard = $leaderboard->map(function ($user, $index) {
-            $user->rank = $index + 1;
-            return $user;
+        // Cache leaderboard for 5 minutes per tenant
+        $leaderboard = Cache::remember("leaderboard:{$tenantId}", 300, function () use ($tenantId) {
+            return User::where('tenant_id', $tenantId)
+                ->where('is_active', true)
+                ->with('department:id,name')
+                ->withCount([
+                    'courseEnrollments as courses_completed' => fn($q) => $q->where('status', 'completed'),
+                    'quizAttempts as passed_quizzes' => fn($q) => $q->where('passed', true),
+                    'badges as badges_count',
+                ])
+                ->get()
+                ->map(function ($user) {
+                    $user->total_points = ($user->courses_completed * 100)
+                        + ($user->passed_quizzes * 50)
+                        + ($user->badges_count * 25);
+                    return $user;
+                })
+                ->sortByDesc('total_points')
+                ->values()
+                ->map(function ($user, $index) {
+                    $user->rank = $index + 1;
+                    return $user;
+                });
         });
 
         // Current user stats
