@@ -78,7 +78,7 @@ class CourseSeederBatch4 extends Seeder
                     foreach ($qData['answers'] as $ai => $aData) {
                         QuizAnswer::create([
                             'question_id' => $question->id,
-                            'answer' => $aData['answer'],
+                            'answer_text' => $aData['answer'],
                             'is_correct' => $aData['is_correct'],
                             'sort_order' => $ai,
                         ]);
