@@ -24,6 +24,14 @@ class LoginController extends Controller
     public function checkSso(Request $request)
     {
         $request->validate(['email' => 'required|email']);
+
+        // Rate limit: 10 per minute per IP
+        $key = 'sso-check|' . $request->ip();
+        if (RateLimiter::tooManyAttempts($key, 10)) {
+            return response()->json(['error' => 'Too many requests.'], 429);
+        }
+        RateLimiter::hit($key, 60);
+
         $domain = strtolower(substr(strrchr($request->email, '@'), 1));
 
         $configs = TenantSsoConfig::where('is_active', true)

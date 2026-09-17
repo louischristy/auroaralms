@@ -7,6 +7,8 @@ use App\Services\AuditLogService;
 use App\Services\TotpService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 
 class TwoFactorController extends Controller
 {
@@ -120,6 +122,15 @@ class TwoFactorController extends Controller
             'code' => ['required', 'string'],
         ]);
 
+        // Rate limit: 5 attempts per minute per IP to prevent brute force
+        $key = '2fa-verify|' . $request->ip();
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $seconds = RateLimiter::availableIn($key);
+            throw ValidationException::withMessages([
+                'code' => __('Too many attempts. Please try again in :seconds seconds.', ['seconds' => $seconds]),
+            ]);
+        }
+
         $userId = session('2fa:user_id');
         $remember = session('2fa:remember', false);
 
@@ -139,6 +150,7 @@ class TwoFactorController extends Controller
 
         // Try TOTP code first
         if (strlen($code) === 6 && $this->totp->verify($user->two_factor_secret, $code)) {
+            RateLimiter::clear($key);
             return $this->completeTwoFactorLogin($request, $user, $remember);
         }
 
@@ -153,9 +165,12 @@ class TwoFactorController extends Controller
             ]);
 
             AuditLogService::log('2fa_recovery_code_used', $user);
+            RateLimiter::clear($key);
 
             return $this->completeTwoFactorLogin($request, $user, $remember);
         }
+
+        RateLimiter::hit($key, 60);
 
         return back()->withErrors(['code' => 'Invalid authentication code.']);
     }
