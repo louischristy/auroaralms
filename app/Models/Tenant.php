@@ -20,6 +20,7 @@ class Tenant extends Model
         'primary_color',
         'accent_color',
         'is_active',
+        'require_two_factor',
         'settings',
         'max_users',
         'subscription_plan',
@@ -28,6 +29,7 @@ class Tenant extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'require_two_factor' => 'boolean',
         'settings' => 'array',
         'subscription_expires_at' => 'datetime',
     ];

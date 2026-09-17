@@ -64,5 +64,52 @@
             <button type="submit" class="btn-primary">Change Password</button>
         </div>
     </form>
+
+    {{-- Two-Factor Authentication --}}
+    <div class="card p-6 space-y-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-medium text-gray-800">Two-Factor Authentication</h3>
+                <p class="text-sm text-gray-500 mt-1">Add an extra layer of security to your account.</p>
+            </div>
+            @if($user->two_factor_enabled)
+                <span class="badge-success">Enabled</span>
+            @else
+                <span class="badge-warning">Not Enabled</span>
+            @endif
+        </div>
+
+        @if($user->two_factor_enabled)
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p class="text-sm text-green-800">Two-factor authentication is active on your account. You will be asked for a verification code each time you sign in.</p>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                <form method="POST" action="{{ route('two-factor.recovery-codes') }}" class="inline">
+                    @csrf
+                    <input type="password" name="current_password" placeholder="Current password" required class="input w-48 inline-block text-sm">
+                    <button type="submit" class="btn-outline btn-sm ml-1">Regenerate Recovery Codes</button>
+                </form>
+            </div>
+
+            @if(!($user->tenant && $user->tenant->require_two_factor))
+            <form method="POST" action="{{ route('two-factor.disable') }}" class="pt-2 border-t border-gray-100">
+                @csrf
+                <p class="text-sm text-gray-600 mb-3">To disable two-factor authentication, enter your password.</p>
+                <div class="flex items-center gap-3">
+                    <input type="password" name="current_password" placeholder="Current password" required class="input w-48 text-sm">
+                    <button type="submit" class="btn-danger btn-sm">Disable 2FA</button>
+                </div>
+                @error('current_password')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </form>
+            @else
+            <p class="text-sm text-amber-700 pt-2 border-t border-gray-100">Your organization requires two-factor authentication. It cannot be disabled.</p>
+            @endif
+        @else
+            <a href="{{ route('two-factor.setup') }}" class="btn-primary inline-block">Set Up 2FA</a>
+        @endif
+    </div>
 </div>
 @endsection

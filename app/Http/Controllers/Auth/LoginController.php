@@ -110,6 +110,17 @@ class LoginController extends Controller
 
         RateLimiter::clear($throttleKey);
 
+        // If 2FA is enabled, log out and redirect to challenge
+        if ($user->two_factor_enabled) {
+            $userId = $user->id;
+            Auth::logout();
+
+            $request->session()->put('2fa:user_id', $userId);
+            $request->session()->put('2fa:remember', $request->boolean('remember'));
+
+            return redirect()->route('two-factor.challenge');
+        }
+
         $user->update(['last_login_at' => now()]);
         $request->session()->regenerate();
 

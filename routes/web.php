@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\ScormApiController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SsoController;
+use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
@@ -45,11 +46,24 @@ Route::middleware('guest')->group(function () {
     // SSO
     Route::get('sso/{provider}/redirect', [SsoController::class, 'redirect'])->name('sso.redirect');
     Route::get('sso/{provider}/callback', [SsoController::class, 'callback'])->name('sso.callback');
+
+    // 2FA Challenge (user is not yet fully authenticated)
+    Route::get('two-factor/challenge', [TwoFactorController::class, 'challenge'])->name('two-factor.challenge')->withoutMiddleware('guest');
+    Route::post('two-factor/verify', [TwoFactorController::class, 'verifyChallenge'])->name('two-factor.verify')->withoutMiddleware('guest');
 });
 
 // ── Authenticated ──
 Route::middleware(['auth', 'resolve.tenant', 'inject.branding'])->group(function () {
     Route::post('logout', [LoginController::class, 'logout'])->name('logout');
+
+    // 2FA Setup (must be accessible before 2fa.verified for forced setup)
+    Route::get('two-factor/setup', [TwoFactorController::class, 'setup'])->name('two-factor.setup');
+    Route::post('two-factor/confirm', [TwoFactorController::class, 'confirmSetup'])->name('two-factor.confirm');
+    Route::post('two-factor/disable', [TwoFactorController::class, 'disable'])->name('two-factor.disable');
+    Route::post('two-factor/recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes'])->name('two-factor.recovery-codes');
+});
+
+Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Notifications

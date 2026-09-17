@@ -67,6 +67,16 @@ class TenantController extends Controller
 
     public function update(Request $request, Tenant $tenant)
     {
+        // Handle security-only update (2FA toggle from show page)
+        if ($request->input('_security_only')) {
+            $tenant->update([
+                'require_two_factor' => $request->boolean('require_two_factor'),
+            ]);
+
+            return redirect()->route('platform.tenants.show', $tenant)
+                ->with('success', 'Security settings updated.');
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:100', 'unique:tenants,slug,' . $tenant->id],

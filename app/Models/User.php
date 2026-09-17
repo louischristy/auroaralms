@@ -29,11 +29,16 @@ class User extends Authenticatable
         'last_login_at',
         'must_change_password',
         'activated_at',
+        'two_factor_secret',
+        'two_factor_enabled',
+        'two_factor_recovery_codes',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     protected $casts = [
@@ -43,6 +48,9 @@ class User extends Authenticatable
         'last_login_at' => 'datetime',
         'must_change_password' => 'boolean',
         'activated_at' => 'datetime',
+        'two_factor_secret' => 'encrypted',
+        'two_factor_enabled' => 'boolean',
+        'two_factor_recovery_codes' => 'encrypted:array',
     ];
 
     // ── Role helpers ──

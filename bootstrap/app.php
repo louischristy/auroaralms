@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\CheckRole::class,
             'resolve.tenant' => \App\Http\Middleware\ResolveTenant::class,
             'inject.branding' => \App\Http\Middleware\InjectBranding::class,
+            '2fa.verified' => \App\Http\Middleware\EnsureTwoFactorVerified::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

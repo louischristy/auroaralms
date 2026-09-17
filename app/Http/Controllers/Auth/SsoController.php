@@ -88,6 +88,14 @@ class SsoController extends Controller
         // Clean up session
         session()->forget(['sso_tenant_id', 'sso_provider']);
 
+        // If 2FA is enabled, redirect to challenge instead of logging in
+        if ($user->two_factor_enabled) {
+            $request->session()->put('2fa:user_id', $user->id);
+            $request->session()->put('2fa:remember', true);
+
+            return redirect()->route('two-factor.challenge');
+        }
+
         Auth::login($user, true);
 
         return redirect()->route('dashboard');
