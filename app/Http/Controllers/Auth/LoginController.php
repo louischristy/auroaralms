@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\TenantSsoConfig;
 use App\Services\AuditLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +16,37 @@ class LoginController extends Controller
     public function showLoginForm()
     {
         return view('auth.login');
+    }
+
+    /**
+     * Check if SSO is available for a given email domain (AJAX).
+     */
+    public function checkSso(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+        $domain = strtolower(substr(strrchr($request->email, '@'), 1));
+
+        $configs = TenantSsoConfig::where('is_active', true)
+            ->get()
+            ->filter(fn($c) => $c->isDomainAllowed($request->email));
+
+        if ($configs->isEmpty()) {
+            return response()->json(['sso' => false]);
+        }
+
+        $config = $configs->first();
+        $providers = $configs->map(fn($c) => [
+            'provider'  => $c->provider,
+            'label'     => TenantSsoConfig::providers()[$c->provider] ?? ucfirst($c->provider),
+            'url'       => route('sso.redirect', ['provider' => $c->provider, 'tenant' => $c->tenant_id]),
+            'force_sso' => $c->force_sso,
+        ])->values();
+
+        return response()->json([
+            'sso'       => true,
+            'force_sso' => $configs->contains('force_sso', true),
+            'providers' => $providers,
+        ]);
     }
 
     public function login(Request $request)
@@ -31,6 +63,19 @@ class LoginController extends Controller
 
             throw ValidationException::withMessages([
                 'email' => __('Too many login attempts. Please try again in :seconds seconds.', ['seconds' => $seconds]),
+            ]);
+        }
+
+        // Block password login if tenant has force_sso enabled
+        $domain = strtolower(substr(strrchr($credentials['email'], '@'), 1));
+        $forceSso = TenantSsoConfig::where('is_active', true)
+            ->where('force_sso', true)
+            ->get()
+            ->first(fn($c) => $c->isDomainAllowed($credentials['email']));
+
+        if ($forceSso) {
+            throw ValidationException::withMessages([
+                'email' => __('Your organization requires SSO login. Please use the SSO button.'),
             ]);
         }
 

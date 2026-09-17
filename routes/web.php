@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\ScormApiController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\SsoController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\Platform\PlatformUserController;
 use App\Http\Controllers\Platform\CourseManagementController;
 use App\Http\Controllers\Platform\CourseCategoryController;
 use App\Http\Controllers\Platform\ReportController as PlatformReportController;
+use App\Http\Controllers\Platform\TenantSsoController;
 use App\Http\Controllers\Client\ReportController as ClientReportController;
 use App\Http\Controllers\Client\UserController;
 use App\Http\Controllers\Client\DepartmentController;
@@ -34,10 +36,15 @@ Route::get('/', function () {
 Route::middleware('guest')->group(function () {
     Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('login', [LoginController::class, 'login']);
+    Route::post('login/check-sso', [LoginController::class, 'checkSso'])->name('login.check-sso');
     Route::get('forgot-password', [ForgotPasswordController::class, 'showForm'])->name('password.request');
     Route::post('forgot-password', [ForgotPasswordController::class, 'sendResetLink'])->name('password.email');
     Route::get('reset-password/{token}', [ResetPasswordController::class, 'showForm'])->name('password.reset');
     Route::post('reset-password', [ResetPasswordController::class, 'reset'])->name('password.update');
+
+    // SSO
+    Route::get('sso/{provider}/redirect', [SsoController::class, 'redirect'])->name('sso.redirect');
+    Route::get('sso/{provider}/callback', [SsoController::class, 'callback'])->name('sso.callback');
 });
 
 // ── Authenticated ──
@@ -60,6 +67,12 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding'])->group(function
         // Tenants
         Route::resource('tenants', TenantController::class);
         Route::post('tenants/{tenant}/toggle-status', [TenantController::class, 'toggleStatus'])->name('tenants.toggle-status');
+
+        // Tenant SSO Settings
+        Route::get('tenants/{tenant}/sso', [TenantSsoController::class, 'index'])->name('tenants.sso.index');
+        Route::post('tenants/{tenant}/sso', [TenantSsoController::class, 'store'])->name('tenants.sso.store');
+        Route::put('tenants/{tenant}/sso/{sso}', [TenantSsoController::class, 'update'])->name('tenants.sso.update');
+        Route::delete('tenants/{tenant}/sso/{sso}', [TenantSsoController::class, 'destroy'])->name('tenants.sso.destroy');
 
         // Platform Settings
         Route::get('settings', [PlatformSettingController::class, 'edit'])->name('settings.edit');

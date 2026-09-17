@@ -9,6 +9,7 @@
             <p class="text-sm text-gray-500 mt-1">Tenant details.</p>
         </div>
         <div class="flex items-center gap-2">
+            <a href="{{ route('platform.tenants.sso.index', $tenant) }}" class="btn-outline">SSO Settings</a>
             <a href="{{ route('platform.tenants.edit', $tenant) }}" class="btn-outline">Edit</a>
             <a href="{{ route('platform.tenants.index') }}" class="btn-outline">Back</a>
         </div>
