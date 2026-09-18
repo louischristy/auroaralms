@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Platform;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 
 class TenantController extends Controller
@@ -49,8 +50,11 @@ class TenantController extends Controller
         ]);
         $admin->assignRole('client-admin');
 
+        // Send password reset link so the admin can set their own password
+        Password::sendResetLink(['email' => $admin->email]);
+
         return redirect()->route('platform.tenants.index')
-            ->with('success', "Tenant '{$tenant->name}' created successfully.");
+            ->with('success', "Tenant '{$tenant->name}' created. A password setup email has been sent to {$admin->email}.");
     }
 
     public function show(Tenant $tenant)

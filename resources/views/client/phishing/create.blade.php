@@ -103,6 +103,32 @@
         </div>
 
         <div class="card p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-gray-900">Simulation Settings</h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="custom_click_rate" class="block text-sm font-medium text-gray-700 mb-1">Custom Click Rate % (optional)</label>
+                    <input type="number" name="custom_click_rate" id="custom_click_rate" value="{{ old('custom_click_rate') }}" min="0" max="100" class="input w-full" placeholder="Auto (based on template difficulty)">
+                    <p class="text-xs text-gray-400 mt-1">Override the % of users who click the phishing link.</p>
+                </div>
+                <div>
+                    <label for="custom_report_rate" class="block text-sm font-medium text-gray-700 mb-1">Custom Report Rate % (optional)</label>
+                    <input type="number" name="custom_report_rate" id="custom_report_rate" value="{{ old('custom_report_rate') }}" min="0" max="100" class="input w-full" placeholder="Auto (based on template difficulty)">
+                    <p class="text-xs text-gray-400 mt-1">Override the % of users who report the phishing email.</p>
+                </div>
+            </div>
+
+            <div>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="training_aware" value="1" {{ old('training_aware', '1') ? 'checked' : '' }}
+                           class="rounded border-gray-300 text-primary focus:ring-primary">
+                    <span class="text-sm text-gray-700">Training-aware simulation</span>
+                </label>
+                <p class="text-xs text-gray-400 mt-1 ml-6">Users who completed phishing/social engineering courses will show better results (less clicking, more reporting).</p>
+            </div>
+        </div>
+
+        <div class="card p-6 space-y-4">
             <h2 class="text-lg font-semibold text-gray-900">Schedule</h2>
 
             <div>

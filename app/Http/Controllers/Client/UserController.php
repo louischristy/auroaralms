@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 
 class UserController extends Controller
@@ -57,8 +58,11 @@ class UserController extends Controller
 
         $user->assignRole($validated['role']);
 
+        // Send password reset link so the user can set their own password
+        Password::sendResetLink(['email' => $user->email]);
+
         return redirect()->route('manage.users.index')
-            ->with('success', "User '{$user->name}' created successfully.");
+            ->with('success', "User '{$user->name}' created. A password setup email has been sent to {$user->email}.");
     }
 
     public function show(User $user)

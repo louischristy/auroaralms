@@ -12,14 +12,12 @@
             </p>
         </div>
         <div class="flex items-center gap-3">
-            @if($campaign->status !== 'completed')
-                <form method="POST" action="{{ route('manage.phishing.simulate', $campaign) }}">
-                    @csrf
-                    <button type="submit" class="btn-primary" onclick="return confirm('This will simulate sending phishing emails to all employees and generate randomized results. Continue?')">
-                        Run Simulation
-                    </button>
-                </form>
-            @endif
+            <form method="POST" action="{{ route('manage.phishing.simulate', $campaign) }}">
+                @csrf
+                <button type="submit" class="btn-primary" onclick="return confirm('{{ $campaign->status === 'completed' ? 'This will clear existing results and re-run the simulation with new randomized data. Continue?' : 'This will simulate sending phishing emails and generate results based on template difficulty and training history. Continue?' }}')">
+                    {{ $campaign->status === 'completed' ? 'Re-run Simulation' : 'Run Simulation' }}
+                </button>
+            </form>
             <a href="{{ route('manage.phishing.index') }}" class="text-sm text-gray-500 hover:text-gray-700">&larr; Back</a>
         </div>
     </div>
@@ -41,6 +39,12 @@
         </span>
         @if($campaign->sent_at)
             <span class="text-sm text-gray-500">Sent {{ $campaign->sent_at->format('M d, Y g:i A') }}</span>
+        @endif
+        @if($campaign->training_aware)
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Training-aware</span>
+        @endif
+        @if($campaign->target_type === 'departments')
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">Department-targeted</span>
         @endif
     </div>
 
