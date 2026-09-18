@@ -149,8 +149,8 @@ class CourseController extends Controller
         $user = Auth::user();
 
         LessonCompletion::firstOrCreate(
-            ['user_id' => $user->id, 'lesson_id' => $lesson->id],
-            ['course_id' => $course->id, 'completed_at' => now(), 'time_spent_seconds' => 0]
+            ['user_id' => $user->id, 'lesson_id' => $lesson->id, 'course_id' => $course->id],
+            ['completed_at' => now(), 'time_spent_seconds' => 0]
         );
 
         // Recalculate progress
