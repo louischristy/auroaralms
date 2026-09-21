@@ -60,13 +60,6 @@ class DashboardController extends Controller
 
         // Completion rate by tenant - use aggregate query instead of N+1
         $tenantStats = Cache::remember('platform_dashboard_tenant_stats', 300, function () {
-            $enrollmentStats = CourseEnrollment::withoutTenantScope()
-                ->select('tenant_id',
-                    DB::raw('COUNT(*) as enrollment_count'),
-                    DB::raw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_count")
-                )
-                ->groupBy('tenant_id')
-                ->pluck(DB::raw("JSON_OBJECT('enrollment_count', COUNT(*), 'completed_count', SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END))"), 'tenant_id');
 
             // Simpler approach: get stats as keyed array
             $enrollmentsByTenant = CourseEnrollment::withoutTenantScope()

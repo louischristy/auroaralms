@@ -69,7 +69,7 @@ class ClientCourseController extends Controller
                 ->orderBy('title')
                 ->get();
         } else {
-            $courses = Course::tenantCourses($tenantId)
+            $courses = Course::where('tenant_id', $tenantId)
                 ->withCount('lessons')
                 ->orderBy('created_at', 'desc')
                 ->paginate(20);
@@ -80,7 +80,7 @@ class ClientCourseController extends Controller
             $assignedPlatformIds = DB::table('course_tenant')
                 ->where('tenant_id', $tenantId)
                 ->pluck('course_id');
-            $platformCourses = Course::withoutTenantScope()
+            $platformCourses = Course::query()
                 ->whereNull('tenant_id')
                 ->where('is_active', true)
                 ->whereIn('id', $assignedPlatformIds)
@@ -392,7 +392,7 @@ class ClientCourseController extends Controller
      */
     public function assignUsers(int $course)
     {
-        $course = Course::withoutTenantScope()->findOrFail($course);
+        $course = Course::findOrFail($course);
         $this->authorizeTenantCourse($course);
         $tenantId = $this->tenantId();
 
@@ -415,7 +415,7 @@ class ClientCourseController extends Controller
      */
     public function assignUsersSave(Request $request, int $course)
     {
-        $course = Course::withoutTenantScope()->findOrFail($course);
+        $course = Course::findOrFail($course);
         $this->authorizeTenantCourse($course);
 
         $validated = $request->validate([

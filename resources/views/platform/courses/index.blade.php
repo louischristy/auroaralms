@@ -8,7 +8,10 @@
             <h1 class="text-2xl font-bold text-gray-900">Course Catalog</h1>
             <p class="text-sm text-gray-500 mt-1">Manage cybersecurity training courses.</p>
         </div>
-        <a href="{{ route('platform.courses.create') }}" class="btn-primary text-sm">+ New Course</a>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('platform.courses.bulk-assign') }}" class="btn-outline text-sm">Bulk Assign to Tenants</a>
+            <a href="{{ route('platform.courses.create') }}" class="btn-primary text-sm">+ New Course</a>
+        </div>
     </div>
 
     {{-- Filters --}}

@@ -80,24 +80,11 @@
 
 @if($data->count() > 0)
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script>
-new Chart(document.getElementById('deptChart'), {
-    type: 'bar',
-    data: {
-        labels: @json($data->pluck('department')),
-        datasets: [{
-            label: 'Completion %',
-            data: @json($data->pluck('completion_rate')),
-            backgroundColor: @json($data->map(fn($r) => $r['completion_rate'] >= 80 ? 'rgba(16, 185, 129, 0.7)' : ($r['completion_rate'] >= 50 ? 'rgba(234, 179, 8, 0.7)' : 'rgba(239, 68, 68, 0.7)'))),
-        }]
-    },
-    options: {
-        responsive: true,
-        indexAxis: 'y',
-        plugins: { legend: { display: false } },
-        scales: { x: { beginAtZero: true, max: 100 } }
-    }
-});
-</script>
+<div id="deptChartData"
+     data-labels="{{ e(json_encode($data->pluck('department')->values())) }}"
+     data-values="{{ e(json_encode($data->pluck('completion_rate')->values())) }}"
+     data-colors="{{ e(json_encode($data->map(fn($r) => $r['completion_rate'] >= 80 ? 'rgba(16, 185, 129, 0.7)' : ($r['completion_rate'] >= 50 ? 'rgba(234, 179, 8, 0.7)' : 'rgba(239, 68, 68, 0.7)'))->values())) }}"
+     style="display:none"></div>
+<script src="{{ asset('js/dept-chart.js') }}"></script>
 @endif
 @endsection

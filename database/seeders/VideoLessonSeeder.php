@@ -36,7 +36,7 @@ class VideoLessonSeeder extends Seeder
                     'video_url' => $lessonData['video_url'],
                     'content' => $lessonData['content'],
                     'duration_minutes' => $lessonData['duration_minutes'],
-                    'sort_order' => 0,
+                    'sort_order' => $course->lessons()->max('sort_order') + 1,
                     'is_active' => true,
                 ]
             );

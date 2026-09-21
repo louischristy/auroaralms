@@ -108,9 +108,12 @@ class ReportController extends Controller
             ->withCount('users')
             ->get();
 
+        $tenantId = app()->bound('current_tenant_id') ? app('current_tenant_id') : null;
+
         $deptEnrollments = DB::table('course_enrollments')
             ->join('users', 'users.id', '=', 'course_enrollments.user_id')
             ->whereNotNull('users.department_id')
+            ->when($tenantId, fn($q) => $q->where('course_enrollments.tenant_id', $tenantId))
             ->whereBetween('course_enrollments.created_at', [$from, "$to 23:59:59"])
             ->select(
                 'users.department_id',

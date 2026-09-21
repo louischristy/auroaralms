@@ -112,6 +112,53 @@ class CourseManagementController extends Controller
         return back()->with('success', 'Tenant assignments updated.');
     }
 
+    // ── Bulk tenant assignment ──
+
+    public function bulkAssign()
+    {
+        $courses = Course::whereNull('tenant_id')
+            ->where('is_active', true)
+            ->orderBy('title')
+            ->get();
+
+        $tenants = Tenant::where('is_active', true)->orderBy('name')->get();
+
+        // Build current assignments matrix
+        $assignments = [];
+        foreach ($courses as $course) {
+            $assignments[$course->id] = $course->tenants()->pluck('tenants.id')->toArray();
+        }
+
+        return view('platform.courses.bulk-assign', compact('courses', 'tenants', 'assignments'));
+    }
+
+    public function bulkAssignSave(Request $request)
+    {
+        $validated = $request->validate([
+            'assignments' => ['nullable', 'array'],
+            'assignments.*' => ['array'],
+            'assignments.*.*' => ['exists:tenants,id'],
+        ]);
+
+        $assignments = $validated['assignments'] ?? [];
+
+        // Get all active platform courses
+        $courses = Course::whereNull('tenant_id')->where('is_active', true)->get();
+
+        $updated = 0;
+        foreach ($courses as $course) {
+            $tenantIds = array_map('intval', $assignments[$course->id] ?? []);
+            $current = $course->tenants()->pluck('tenants.id')->toArray();
+
+            if (array_diff($tenantIds, $current) || array_diff($current, $tenantIds)) {
+                $course->tenants()->sync($tenantIds);
+                $updated++;
+            }
+        }
+
+        return back()->with('success', "{$updated} course(s) updated.");
+    }
+
     // ── Lesson management ──
 
     public function storeLesson(Request $request, Course $course)

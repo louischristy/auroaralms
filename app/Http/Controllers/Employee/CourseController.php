@@ -109,7 +109,7 @@ class CourseController extends Controller
         }
 
         $course->load([
-            'lessons' => fn($q) => $q->where('is_active', true)->orderBy('sort_order'),
+            'lessons' => fn($q) => $q->where('is_active', true)->orderBy('sort_order')->orderBy('id'),
             'quiz',
         ]);
 
@@ -161,7 +161,7 @@ class CourseController extends Controller
             if (!$hasAccess) abort(403);
         }
 
-        $course->load(['lessons' => fn($q) => $q->where('is_active', true)->orderBy('sort_order')]);
+        $course->load(['lessons' => fn($q) => $q->where('is_active', true)->orderBy('sort_order')->orderBy('id')]);
 
         $completedLessonIds = LessonCompletion::where('user_id', $user->id)
             ->where('course_id', $course->id)
@@ -214,10 +214,18 @@ class CourseController extends Controller
         }
 
         // Go to next lesson or back to course
+        // Use sort_order + id to handle duplicate sort_order values
         $nextLesson = Lesson::where('course_id', $course->id)
             ->where('is_active', true)
-            ->where('sort_order', '>', $lesson->sort_order)
+            ->where(function ($q) use ($lesson) {
+                $q->where('sort_order', '>', $lesson->sort_order)
+                  ->orWhere(function ($q2) use ($lesson) {
+                      $q2->where('sort_order', '=', $lesson->sort_order)
+                         ->where('id', '>', $lesson->id);
+                  });
+            })
             ->orderBy('sort_order')
+            ->orderBy('id')
             ->first();
 
         if ($nextLesson) {

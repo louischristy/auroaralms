@@ -15,15 +15,30 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        $users = User::with(['department', 'roles'])
+        $tenantId = app()->bound('current_tenant_id') ? app('current_tenant_id') : null;
+        $tenants = null;
+
+        $query = User::with(['department', 'roles']);
+
+        // Platform admin sees all tenant users with tenant filter
+        if (!$tenantId) {
+            $query->withoutTenantScope()->whereNotNull('tenant_id')->with('tenant');
+            $tenants = \App\Models\Tenant::orderBy('name')->get();
+            $query->when($request->tenant_id, fn ($q, $t) => $q->where('tenant_id', $t));
+        }
+
+        $users = $query
             ->when($request->search, fn ($q, $s) => $q->where(fn ($sub) => $sub->where('name', 'like', "%{$s}%")->orWhere('email', 'like', "%{$s}%")))
             ->when($request->department_id, fn ($q, $d) => $q->where('department_id', $d))
             ->latest()
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
 
-        $departments = Department::orderBy('name')->get();
+        $departments = !$tenantId
+            ? Department::withoutTenantScope()->orderBy('name')->get()
+            : Department::orderBy('name')->get();
 
-        return view('client.users.index', compact('users', 'departments'));
+        return view('client.users.index', compact('users', 'departments', 'tenants'));
     }
 
     public function create()
