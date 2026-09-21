@@ -91,6 +91,11 @@
                                 <div class="flex items-center justify-end gap-2">
                                     <a href="{{ route('manage.policies.show', $policy) }}" class="text-secondary hover:text-primary text-xs font-medium">View</a>
                                     <a href="{{ route('manage.policies.edit', $policy) }}" class="text-secondary hover:text-primary text-xs font-medium">Edit</a>
+                                    <form method="POST" action="{{ route('manage.policies.destroy', $policy) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this policy? This cannot be undone.')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-red-500 hover:text-red-700 text-xs font-medium">Delete</button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>

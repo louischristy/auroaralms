@@ -33,9 +33,21 @@ class ClientCourseController extends Controller
         if (!$tenantId) {
             return;
         }
-        if ((int) $course->tenant_id !== $tenantId) {
-            abort(Response::HTTP_FORBIDDEN, 'This course does not belong to your organization.');
+        // Course belongs to tenant directly
+        if ($course->tenant_id && (int) $course->tenant_id === $tenantId) {
+            return;
         }
+        // Platform course assigned to tenant via course_tenant pivot
+        if (!$course->tenant_id) {
+            $assigned = DB::table('course_tenant')
+                ->where('course_id', $course->id)
+                ->where('tenant_id', $tenantId)
+                ->exists();
+            if ($assigned) {
+                return;
+            }
+        }
+        abort(Response::HTTP_FORBIDDEN, 'This course does not belong to your organization.');
     }
 
     public function index()
@@ -440,7 +452,7 @@ class ClientCourseController extends Controller
         // Auto-enroll assigned users who aren't enrolled yet
         $newEnrollments = 0;
         foreach ($userIds as $userId) {
-            $user = User::find($userId);
+            $user = User::withoutTenantScope()->find($userId);
             if (!$user || !$user->tenant_id) continue;
 
             $enrolled = CourseEnrollment::withoutTenantScope()
