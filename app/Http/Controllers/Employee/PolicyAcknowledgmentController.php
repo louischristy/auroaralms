@@ -7,6 +7,7 @@ use App\Models\Policy;
 use App\Models\PolicyAcknowledgment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class PolicyAcknowledgmentController extends Controller
 {
@@ -41,5 +42,21 @@ class PolicyAcknowledgmentController extends Controller
         ]);
 
         return back()->with('success', 'Policy acknowledged successfully.');
+    }
+
+    public function viewDocument(Policy $policy)
+    {
+        if (!$policy->is_published) {
+            abort(404);
+        }
+
+        if (!$policy->document_path || !Storage::disk('public')->exists($policy->document_path)) {
+            abort(404, 'Document not found.');
+        }
+
+        return response()->file(Storage::disk('public')->path($policy->document_path), [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . ($policy->document_original_name ?? 'policy.pdf') . '"',
+        ]);
     }
 }

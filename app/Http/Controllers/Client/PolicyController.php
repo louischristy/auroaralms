@@ -10,6 +10,7 @@ use App\Notifications\PolicyPushed;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class PolicyController extends Controller
 {
@@ -18,7 +19,6 @@ class PolicyController extends Controller
         $user = Auth::user();
 
         if ($user->hasRole('platform-admin')) {
-            // Platform admin sees all policies grouped by tenant
             $tenants = Tenant::orderBy('name')->get();
 
             $query = Policy::withoutTenantScope()
@@ -72,7 +72,8 @@ class PolicyController extends Controller
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'content' => ['required', 'string'],
+            'content' => ['nullable', 'string'],
+            'document' => ['required', 'file', 'mimes:pdf', 'max:20480'],
             'version' => ['nullable', 'string', 'max:50'],
             'requires_acknowledgment' => ['boolean'],
             'acknowledgment_deadline_days' => ['nullable', 'integer', 'min:1'],
@@ -81,17 +82,28 @@ class PolicyController extends Controller
 
         $user = Auth::user();
 
-        // Platform admin can assign to any tenant
         if ($user->hasRole('platform-admin') && !empty($validated['tenant_id'])) {
-            $validated['tenant_id'] = $validated['tenant_id'];
+            $tenantId = $validated['tenant_id'];
         } else {
-            $validated['tenant_id'] = $user->tenant_id;
+            $tenantId = $user->tenant_id;
         }
 
-        $validated['created_by'] = Auth::id();
-        $validated['version'] = $validated['version'] ?? '1.0';
+        // Store PDF
+        $file = $request->file('document');
+        $originalName = $file->getClientOriginalName();
+        $path = $file->store('policies', 'public');
 
-        Policy::withoutTenantScope()->create($validated);
+        Policy::withoutTenantScope()->create([
+            'tenant_id' => $tenantId,
+            'title' => $validated['title'],
+            'content' => $validated['content'] ?? '',
+            'document_path' => $path,
+            'document_original_name' => $originalName,
+            'version' => $validated['version'] ?? '1.0',
+            'requires_acknowledgment' => $request->boolean('requires_acknowledgment', true),
+            'acknowledgment_deadline_days' => $validated['acknowledgment_deadline_days'] ?? null,
+            'created_by' => Auth::id(),
+        ]);
 
         return redirect()->route('manage.policies.index')
             ->with('success', 'Policy created successfully.');
@@ -99,14 +111,22 @@ class PolicyController extends Controller
 
     public function show(Policy $policy)
     {
-        // Platform admin can view any policy
         if (Auth::user()->hasRole('platform-admin')) {
             $policy = Policy::withoutTenantScope()->with('acknowledgments.user', 'tenant')->findOrFail($policy->id);
         } else {
             $policy->load('acknowledgments.user');
         }
 
-        return view('client.policies.show', compact('policy'));
+        // Get tenant user count for publish stats
+        $tenantUserCount = 0;
+        if ($policy->tenant_id) {
+            $tenantUserCount = User::withoutTenantScope()
+                ->where('tenant_id', $policy->tenant_id)
+                ->where('is_active', true)
+                ->count();
+        }
+
+        return view('client.policies.show', compact('policy', 'tenantUserCount'));
     }
 
     public function edit(Policy $policy)
@@ -125,7 +145,8 @@ class PolicyController extends Controller
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'content' => ['required', 'string'],
+            'content' => ['nullable', 'string'],
+            'document' => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
             'version' => ['required', 'string', 'max:50'],
             'requires_acknowledgment' => ['boolean'],
             'acknowledgment_deadline_days' => ['nullable', 'integer', 'min:1'],
@@ -136,7 +157,30 @@ class PolicyController extends Controller
             $policy = Policy::withoutTenantScope()->findOrFail($policy->id);
         }
 
-        $policy->update($validated);
+        $updateData = [
+            'title' => $validated['title'],
+            'content' => $validated['content'] ?? $policy->content,
+            'version' => $validated['version'],
+            'requires_acknowledgment' => $request->boolean('requires_acknowledgment'),
+            'acknowledgment_deadline_days' => $validated['acknowledgment_deadline_days'] ?? null,
+        ];
+
+        if (Auth::user()->hasRole('platform-admin') && isset($validated['tenant_id'])) {
+            $updateData['tenant_id'] = $validated['tenant_id'];
+        }
+
+        // Replace PDF if new one uploaded
+        if ($request->hasFile('document')) {
+            // Delete old file
+            if ($policy->document_path) {
+                Storage::disk('public')->delete($policy->document_path);
+            }
+            $file = $request->file('document');
+            $updateData['document_path'] = $file->store('policies', 'public');
+            $updateData['document_original_name'] = $file->getClientOriginalName();
+        }
+
+        $policy->update($updateData);
 
         return redirect()->route('manage.policies.show', $policy)
             ->with('success', 'Policy updated successfully.');
@@ -148,6 +192,11 @@ class PolicyController extends Controller
             $policy = Policy::withoutTenantScope()->findOrFail($policy->id);
         }
 
+        // Delete document file
+        if ($policy->document_path) {
+            Storage::disk('public')->delete($policy->document_path);
+        }
+
         $policy->delete();
 
         return redirect()->route('manage.policies.index')
@@ -155,197 +204,29 @@ class PolicyController extends Controller
     }
 
     /**
-     * Import a PDF or Word document and extract its content for policy creation.
+     * Serve the policy PDF for viewing (authenticated access).
      */
-    public function importDocument(Request $request)
+    public function viewDocument(Policy $policy)
     {
-        $request->validate([
-            'document' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
-        ]);
-
-        $file = $request->file('document');
-        $extension = strtolower($file->getClientOriginalExtension());
-        $content = '';
-        $title = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-
-        try {
-            if ($extension === 'pdf') {
-                $content = $this->extractPdfText($file->getRealPath());
-            } elseif (in_array($extension, ['docx'])) {
-                $content = $this->extractDocxContent($file->getRealPath());
-            } elseif ($extension === 'doc') {
-                // .doc (legacy) — basic text extraction
-                $raw = file_get_contents($file->getRealPath());
-                // Strip binary, keep printable text
-                $content = preg_replace('/[^\x20-\x7E\x0A\x0D\t]/', '', $raw);
-                $content = trim(preg_replace('/\s{3,}/', "\n\n", $content));
-            }
-        } catch (\Exception $e) {
-            Log::error('Policy document import failed: ' . $e->getMessage());
-            return back()->with('error', 'Failed to extract text from the uploaded document. Please try copying the content manually.');
+        if (Auth::user()->hasRole('platform-admin')) {
+            $policy = Policy::withoutTenantScope()->findOrFail($policy->id);
         }
 
-        if (empty(trim($content))) {
-            return back()->with('error', 'Could not extract readable text from the document. The file may be scanned or image-based. Please copy and paste the content manually.');
+        if (!$policy->document_path || !Storage::disk('public')->exists($policy->document_path)) {
+            abort(404, 'Document not found.');
         }
 
-        // Convert plain text to basic HTML paragraphs
-        $htmlContent = $this->textToHtml($content);
-
-        $user = Auth::user();
-        $tenants = null;
-        if ($user->hasRole('platform-admin')) {
-            $tenants = Tenant::orderBy('name')->get();
-        }
-
-        // Return to the create view with pre-filled content
-        return view('client.policies.create', [
-            'tenants' => $tenants,
-            'importedTitle' => $title,
-            'importedContent' => $htmlContent,
+        return response()->file(Storage::disk('public')->path($policy->document_path), [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . ($policy->document_original_name ?? 'policy.pdf') . '"',
         ]);
     }
 
     /**
-     * Extract text from a PDF file using pdftotext (poppler-utils).
+     * Publish policy and notify all tenant users.
      */
-    private function extractPdfText(string $path): string
-    {
-        // Try pdftotext command first (most reliable on shared hosting)
-        $output = [];
-        $returnCode = 0;
-        $escapedPath = escapeshellarg($path);
-
-        exec("pdftotext {$escapedPath} - 2>/dev/null", $output, $returnCode);
-
-        if ($returnCode === 0 && !empty($output)) {
-            return implode("\n", $output);
-        }
-
-        // Fallback: basic PHP-based text extraction from PDF stream
-        $raw = file_get_contents($path);
-
-        // Extract text between BT and ET markers (basic PDF text extraction)
-        preg_match_all('/BT\s*(.*?)\s*ET/s', $raw, $matches);
-        $text = '';
-        foreach ($matches[1] as $block) {
-            // Extract text in parentheses (Tj/TJ operators)
-            preg_match_all('/\(([^)]*)\)/', $block, $textMatches);
-            $text .= implode(' ', $textMatches[1]) . "\n";
-        }
-
-        // Also try streams
-        if (empty(trim($text))) {
-            preg_match_all('/stream\s*(.*?)\s*endstream/s', $raw, $streams);
-            foreach ($streams[1] as $stream) {
-                $decoded = @gzuncompress($stream);
-                if ($decoded) {
-                    preg_match_all('/\(([^)]*)\)/', $decoded, $textMatches);
-                    $text .= implode(' ', $textMatches[1]) . "\n";
-                }
-            }
-        }
-
-        return trim($text);
-    }
-
-    /**
-     * Extract content from a DOCX file (Office Open XML).
-     */
-    private function extractDocxContent(string $path): string
-    {
-        $zip = new \ZipArchive();
-
-        if ($zip->open($path) !== true) {
-            throw new \RuntimeException('Could not open DOCX file.');
-        }
-
-        $content = $zip->getFromName('word/document.xml');
-        $zip->close();
-
-        if ($content === false) {
-            throw new \RuntimeException('Could not read document.xml from DOCX.');
-        }
-
-        // Parse XML and extract text with basic structure
-        $xml = new \DOMDocument();
-        $xml->loadXML($content, LIBXML_NOERROR | LIBXML_NOWARNING);
-
-        $paragraphs = [];
-        $pNodes = $xml->getElementsByTagNameNS('http://schemas.openxmlformats.org/wordprocessingml/2006/main', 'p');
-
-        foreach ($pNodes as $p) {
-            $text = '';
-            $isBold = false;
-            $isHeading = false;
-
-            // Check for heading style
-            $pPr = $p->getElementsByTagNameNS('http://schemas.openxmlformats.org/wordprocessingml/2006/main', 'pStyle');
-            foreach ($pPr as $style) {
-                $val = $style->getAttribute('w:val');
-                if (preg_match('/Heading|Title/i', $val)) {
-                    $isHeading = true;
-                }
-            }
-
-            // Extract runs
-            $runs = $p->getElementsByTagNameNS('http://schemas.openxmlformats.org/wordprocessingml/2006/main', 'r');
-            foreach ($runs as $r) {
-                $tNodes = $r->getElementsByTagNameNS('http://schemas.openxmlformats.org/wordprocessingml/2006/main', 't');
-                foreach ($tNodes as $t) {
-                    $text .= $t->textContent;
-                }
-            }
-
-            $text = trim($text);
-            if (!empty($text)) {
-                if ($isHeading) {
-                    $paragraphs[] = '<h3>' . htmlspecialchars($text) . '</h3>';
-                } else {
-                    $paragraphs[] = '<p>' . htmlspecialchars($text) . '</p>';
-                }
-            }
-        }
-
-        return implode("\n", $paragraphs);
-    }
-
-    /**
-     * Convert plain text to HTML paragraphs.
-     */
-    private function textToHtml(string $text): string
-    {
-        // If it already contains HTML tags, return as-is
-        if (preg_match('/<[a-z][\s\S]*>/i', $text)) {
-            return $text;
-        }
-
-        $lines = preg_split('/\n{2,}/', trim($text));
-        $html = '';
-
-        foreach ($lines as $line) {
-            $line = trim($line);
-            if (empty($line)) continue;
-
-            // Detect headings (ALL CAPS lines or lines ending with colon)
-            if (preg_match('/^[A-Z][A-Z\s\d.:,\-]{5,}$/', $line)) {
-                $html .= '<h3>' . htmlspecialchars(mb_convert_case($line, MB_CASE_TITLE)) . '</h3>' . "\n";
-            } else {
-                $html .= '<p>' . nl2br(htmlspecialchars($line)) . '</p>' . "\n";
-            }
-        }
-
-        return $html;
-    }
-
     public function push(Request $request, Policy $policy)
     {
-        $request->validate([
-            'user_ids' => ['nullable', 'array'],
-            'user_ids.*' => ['exists:users,id'],
-            'push_to_all' => ['boolean'],
-        ]);
-
         if (Auth::user()->hasRole('platform-admin')) {
             $policy = Policy::withoutTenantScope()->findOrFail($policy->id);
         }
@@ -355,22 +236,17 @@ class PolicyController extends Controller
             'published_at' => now(),
         ]);
 
-        // Send notifications to affected users
+        // Send notifications to all active tenant users
         $tenantId = $policy->tenant_id;
-        if ($request->boolean('push_to_all')) {
-            $users = User::where('tenant_id', $tenantId)->get();
-        } elseif ($request->filled('user_ids')) {
-            $users = User::whereIn('id', $request->user_ids)
-                ->where('tenant_id', $tenantId)
-                ->get();
-        } else {
-            $users = User::where('tenant_id', $tenantId)->get();
-        }
+        $users = User::withoutTenantScope()
+            ->where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->get();
 
         foreach ($users as $user) {
             $user->notify(new PolicyPushed($policy));
         }
 
-        return back()->with('success', "Policy pushed to {$users->count()} user(s) successfully.");
+        return back()->with('success', "Policy published and pushed to {$users->count()} user(s).");
     }
 }

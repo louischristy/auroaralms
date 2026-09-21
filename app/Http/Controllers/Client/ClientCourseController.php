@@ -377,8 +377,9 @@ class ClientCourseController extends Controller
     /**
      * Show the course user assignment page.
      */
-    public function assignUsers(Course $course)
+    public function assignUsers(int $course)
     {
+        $course = Course::withoutTenantScope()->findOrFail($course);
         $this->authorizeTenantCourse($course);
         $tenantId = $this->tenantId();
 
@@ -399,8 +400,9 @@ class ClientCourseController extends Controller
     /**
      * Save course user assignments.
      */
-    public function assignUsersSave(Request $request, Course $course)
+    public function assignUsersSave(Request $request, int $course)
     {
+        $course = Course::withoutTenantScope()->findOrFail($course);
         $this->authorizeTenantCourse($course);
 
         $validated = $request->validate([

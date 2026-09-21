@@ -144,8 +144,8 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::get('audit-logs/{auditLog}', [AuditLogController::class, 'show'])->name('audit-logs.show');
 
         Route::resource('policies', PolicyController::class);
-        Route::post('policies/import-document', [PolicyController::class, 'importDocument'])->name('policies.import-document');
         Route::post('policies/{policy}/push', [PolicyController::class, 'push'])->name('policies.push');
+        Route::get('policies/{policy}/document', [PolicyController::class, 'viewDocument'])->name('policies.document');
 
         Route::resource('phishing', PhishingController::class)->except(['edit', 'update', 'destroy']);
         Route::post('phishing/{campaign}/simulate', [PhishingController::class, 'simulate'])->name('phishing.simulate');
@@ -198,6 +198,7 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::get('policies', [PolicyAcknowledgmentController::class, 'index'])->name('policies.index');
         Route::get('policies/{policy}', [PolicyAcknowledgmentController::class, 'show'])->name('policies.show');
         Route::post('policies/{policy}/acknowledge', [PolicyAcknowledgmentController::class, 'acknowledge'])->name('policies.acknowledge');
+        Route::get('policies/{policy}/document', [PolicyAcknowledgmentController::class, 'viewDocument'])->name('policies.document');
 
         Route::get('leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard.index');
     });

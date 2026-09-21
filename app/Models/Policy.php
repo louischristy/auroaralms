@@ -15,6 +15,8 @@ class Policy extends Model
         'tenant_id',
         'title',
         'content',
+        'document_path',
+        'document_original_name',
         'version',
         'requires_acknowledgment',
         'acknowledgment_deadline_days',
