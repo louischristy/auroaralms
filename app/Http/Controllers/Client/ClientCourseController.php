@@ -9,6 +9,10 @@ use App\Models\Lesson;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
 use App\Models\QuizAnswer;
+use App\Models\CourseEnrollment;
+use App\Models\Department;
+use App\Models\User;
+use App\Notifications\CourseAssigned;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\ScormService;
@@ -350,6 +354,96 @@ class ClientCourseController extends Controller
         $course->load(['lessons' => fn($q) => $q->orderBy('sort_order'), 'quiz.questions.answers']);
 
         return view('client.courses.preview', compact('course'));
+    }
+
+    // ── User Assignment ──
+
+    /**
+     * Show the course user assignment page.
+     */
+    public function assignUsers(Course $course)
+    {
+        $this->authorizeTenantCourse($course);
+        $tenantId = $this->tenantId();
+
+        if ($tenantId) {
+            $users = User::where('tenant_id', $tenantId)->where('is_active', true)->orderBy('name')->get();
+            $departments = Department::where('tenant_id', $tenantId)->orderBy('name')->get();
+        } else {
+            // Platform admin — show all tenant users grouped by tenant
+            $users = User::withoutTenantScope()->whereNotNull('tenant_id')->where('is_active', true)->with('tenant')->orderBy('name')->get();
+            $departments = Department::withoutTenantScope()->with('tenant')->orderBy('name')->get();
+        }
+
+        $assignedUserIds = $course->assignedUsers()->pluck('users.id')->toArray();
+
+        return view('client.courses.assign-users', compact('course', 'users', 'departments', 'assignedUserIds'));
+    }
+
+    /**
+     * Save course user assignments.
+     */
+    public function assignUsersSave(Request $request, Course $course)
+    {
+        $this->authorizeTenantCourse($course);
+
+        $validated = $request->validate([
+            'user_ids' => ['nullable', 'array'],
+            'user_ids.*' => ['exists:users,id'],
+            'department_ids' => ['nullable', 'array'],
+            'department_ids.*' => ['exists:departments,id'],
+            'due_date' => ['nullable', 'date', 'after:today'],
+            'is_mandatory' => ['boolean'],
+        ]);
+
+        $userIds = collect($validated['user_ids'] ?? []);
+
+        // Expand department selections into user IDs
+        if (!empty($validated['department_ids'])) {
+            $deptUsers = User::whereIn('department_id', $validated['department_ids'])
+                ->where('is_active', true)
+                ->pluck('id');
+            $userIds = $userIds->merge($deptUsers)->unique();
+        }
+
+        // Build pivot data
+        $pivotData = [];
+        foreach ($userIds as $userId) {
+            $pivotData[$userId] = [
+                'assigned_by' => Auth::id(),
+                'due_date' => $validated['due_date'] ?? null,
+                'is_mandatory' => $request->boolean('is_mandatory'),
+            ];
+        }
+
+        // Sync assignments
+        $course->assignedUsers()->sync($pivotData);
+
+        // Auto-enroll assigned users who aren't enrolled yet
+        $newEnrollments = 0;
+        foreach ($userIds as $userId) {
+            $user = User::find($userId);
+            if (!$user || !$user->tenant_id) continue;
+
+            $enrolled = CourseEnrollment::withoutTenantScope()
+                ->where('user_id', $userId)
+                ->where('course_id', $course->id)
+                ->exists();
+
+            if (!$enrolled) {
+                CourseEnrollment::withoutTenantScope()->create([
+                    'user_id' => $userId,
+                    'course_id' => $course->id,
+                    'tenant_id' => $user->tenant_id,
+                    'status' => 'not_started',
+                    'due_date' => $validated['due_date'] ?? null,
+                ]);
+                $newEnrollments++;
+            }
+        }
+
+        $total = $userIds->count();
+        return back()->with('success', "Course assigned to {$total} user(s). {$newEnrollments} new enrollment(s) created.");
     }
 
     // ── Helpers ──

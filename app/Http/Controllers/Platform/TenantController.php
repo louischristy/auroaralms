@@ -60,7 +60,7 @@ class TenantController extends Controller
     public function show(Tenant $tenant)
     {
         $tenant->loadCount('users');
-        $tenant->load('users');
+        $tenant->load(['users.roles', 'users.department']);
         return view('platform.tenants.show', compact('tenant'));
     }
 
@@ -111,5 +111,19 @@ class TenantController extends Controller
 
         $status = $tenant->is_active ? 'activated' : 'deactivated';
         return back()->with('success', "Tenant {$status} successfully.");
+    }
+
+    /**
+     * Send password reset link to a tenant user.
+     */
+    public function resetUserPassword(Tenant $tenant, \App\Models\User $user)
+    {
+        if ($user->tenant_id !== $tenant->id) {
+            abort(403, 'User does not belong to this tenant.');
+        }
+
+        Password::sendResetLink(['email' => $user->email]);
+
+        return back()->with('success', "Password reset email sent to {$user->email}.");
     }
 }

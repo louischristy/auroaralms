@@ -25,9 +25,16 @@ class CourseController extends Controller
         $tenantId = $user->tenant_id;
 
         // Get courses assigned to user's tenant
-        $courseIds = DB::table('course_tenant')
+        $tenantCourseIds = DB::table('course_tenant')
             ->where('tenant_id', $tenantId)
             ->pluck('course_id');
+
+        // Get courses assigned directly to this user
+        $userCourseIds = DB::table('course_user')
+            ->where('user_id', $user->id)
+            ->pluck('course_id');
+
+        $courseIds = $tenantCourseIds->merge($userCourseIds)->unique();
 
         $courses = Course::where(function ($q) use ($courseIds, $tenantId) {
                 $q->whereIn('id', $courseIds)
@@ -154,17 +161,20 @@ class CourseController extends Controller
             ['completed_at' => now(), 'time_spent_seconds' => 0]
         );
 
-        // Recalculate progress
-        $enrollment = CourseEnrollment::where('user_id', $user->id)
-            ->where('course_id', $course->id)
-            ->first();
+        // Recalculate progress (use withoutTenantScope for platform admin)
+        $enrollmentQuery = CourseEnrollment::where('user_id', $user->id)
+            ->where('course_id', $course->id);
+        if (!$user->tenant_id) {
+            $enrollmentQuery->withoutTenantScope();
+        }
+        $enrollment = $enrollmentQuery->first();
 
         if ($enrollment) {
             $enrollment->recalculateProgress();
         }
 
-        // Evaluate badges after lesson completion
-        $awarded = app(BadgeService::class)->evaluate($user);
+        // Evaluate badges after lesson completion (skip for platform admin with no tenant)
+        $awarded = $user->tenant_id ? app(BadgeService::class)->evaluate($user) : [];
         $badgeMsg = '';
         if (!empty($awarded)) {
             $names = array_map(fn($b) => $b->icon . ' ' . $b->name, $awarded);
@@ -299,21 +309,26 @@ class CourseController extends Controller
             'completed_at' => now(),
         ]);
 
-        // Recalculate course progress
-        $enrollment = CourseEnrollment::where('user_id', $user->id)
-            ->where('course_id', $course->id)
-            ->first();
+        // Recalculate course progress (use withoutTenantScope for platform admin)
+        $enrollmentQuery = CourseEnrollment::where('user_id', $user->id)
+            ->where('course_id', $course->id);
+        if (!$user->tenant_id) {
+            $enrollmentQuery->withoutTenantScope();
+        }
+        $enrollment = $enrollmentQuery->first();
 
         if ($enrollment) {
             $enrollment->recalculateProgress();
         }
 
-        // Evaluate badges after quiz submission
-        $awarded = app(BadgeService::class)->evaluate($user);
+        // Evaluate badges after quiz submission (skip for platform admin with no tenant)
         $badgeMsg = '';
-        if (!empty($awarded)) {
-            $names = array_map(fn($b) => $b->icon . ' ' . $b->name, $awarded);
-            $badgeMsg = 'Badge earned: ' . implode(', ', $names) . '!';
+        if ($user->tenant_id) {
+            $awarded = app(BadgeService::class)->evaluate($user);
+            if (!empty($awarded)) {
+                $names = array_map(fn($b) => $b->icon . ' ' . $b->name, $awarded);
+                $badgeMsg = 'Badge earned: ' . implode(', ', $names) . '!';
+            }
         }
 
         return redirect()->route('learn.courses.quiz-result', [$course, $attempt])

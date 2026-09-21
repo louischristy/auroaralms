@@ -2,15 +2,54 @@
 @section('title', 'Edit Policy — ' . ($branding['platform_name'] ?? 'Auroara LMS'))
 
 @section('content')
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/quill/2.0.3/quill.snow.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quill/2.0.3/quill.min.js"></script>
+
 <div class="max-w-3xl space-y-6">
     <div>
         <h1 class="text-2xl font-bold text-gray-900">Edit Policy</h1>
         <p class="text-sm text-gray-500 mt-1">Update {{ $policy->title }}.</p>
     </div>
 
-    <form method="POST" action="{{ route('manage.policies.update', $policy) }}" class="card p-6 space-y-5">
+    <form method="POST" action="{{ route('manage.policies.update', $policy) }}" class="card p-6 space-y-5"
+          x-data="{
+              content: {{ json_encode(old('content', $policy->content)) }},
+              quill: null,
+              init() {
+                  this.quill = new Quill(this.$refs.editor, {
+                      theme: 'snow',
+                      modules: {
+                          toolbar: [
+                              [{ header: [2, 3, false] }],
+                              ['bold', 'italic', 'underline'],
+                              [{ list: 'ordered' }, { list: 'bullet' }],
+                              ['link'],
+                              ['clean']
+                          ]
+                      }
+                  });
+                  if (this.content) {
+                      this.quill.root.innerHTML = this.content;
+                  }
+              },
+              submitForm() {
+                  this.content = this.quill.root.innerHTML;
+              }
+          }"
+          x-on:submit="submitForm()">
         @csrf
         @method('PUT')
+
+        @if(!empty($tenants))
+        <div>
+            <label for="tenant_id" class="label">Tenant</label>
+            <select id="tenant_id" name="tenant_id" class="input w-full">
+                @foreach($tenants as $tenant)
+                    <option value="{{ $tenant->id }}" {{ $policy->tenant_id == $tenant->id ? 'selected' : '' }}>{{ $tenant->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        @endif
 
         <div>
             <label for="title" class="label">Title *</label>
@@ -19,8 +58,9 @@
         </div>
 
         <div>
-            <label for="content" class="label">Content *</label>
-            <textarea id="content" name="content" rows="10" required class="input">{{ old('content', $policy->content) }}</textarea>
+            <label class="label">Content *</label>
+            <input type="hidden" name="content" x-model="content">
+            <div x-ref="editor" class="bg-white border border-gray-300 rounded-lg" style="min-height: 300px;"></div>
             @error('content')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
 

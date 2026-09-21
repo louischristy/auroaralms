@@ -61,6 +61,13 @@ class Course extends Model
             ->withTimestamps();
     }
 
+    public function assignedUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'course_user')
+            ->withPivot('assigned_by', 'due_date', 'is_mandatory')
+            ->withTimestamps();
+    }
+
     public function enrollments(): HasMany
     {
         return $this->hasMany(CourseEnrollment::class);

@@ -197,7 +197,7 @@ class ReportController extends Controller
 
         // Question-level difficulty (hardest questions)
         $questionDifficultyQuery = DB::table('quiz_responses')
-            ->join('quiz_questions', 'quiz_responses.quiz_question_id', '=', 'quiz_questions.id')
+            ->join('quiz_questions', 'quiz_responses.question_id', '=', 'quiz_questions.id')
             ->join('quizzes', 'quiz_questions.quiz_id', '=', 'quizzes.id')
             ->join('courses', 'quizzes.course_id', '=', 'courses.id')
             ->whereBetween('quiz_responses.created_at', [$from, "$to 23:59:59"])

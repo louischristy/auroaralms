@@ -88,6 +88,7 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         // Tenants
         Route::resource('tenants', TenantController::class);
         Route::post('tenants/{tenant}/toggle-status', [TenantController::class, 'toggleStatus'])->name('tenants.toggle-status');
+        Route::post('tenants/{tenant}/users/{user}/reset-password', [TenantController::class, 'resetUserPassword'])->name('tenants.reset-user-password');
 
         // Tenant SSO Settings
         Route::get('tenants/{tenant}/sso', [TenantSsoController::class, 'index'])->name('tenants.sso.index');
@@ -102,6 +103,7 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         // All Users (cross-tenant view)
         Route::get('users', [PlatformUserController::class, 'index'])->name('users.index');
         Route::post('users/{user}/force-logout', [SessionController::class, 'forceLogout'])->name('users.force-logout');
+        Route::post('users/{user}/reset-password', [PlatformUserController::class, 'resetPassword'])->name('users.reset-password');
 
         // Reports & Analytics
         Route::get('reports', [PlatformReportController::class, 'index'])->name('reports.index');
@@ -142,6 +144,7 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::get('audit-logs/{auditLog}', [AuditLogController::class, 'show'])->name('audit-logs.show');
 
         Route::resource('policies', PolicyController::class);
+        Route::post('policies/import-document', [PolicyController::class, 'importDocument'])->name('policies.import-document');
         Route::post('policies/{policy}/push', [PolicyController::class, 'push'])->name('policies.push');
 
         Route::resource('phishing', PhishingController::class)->except(['edit', 'update', 'destroy']);
@@ -164,6 +167,8 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::put('courses/{course}/questions/{question}', [ClientCourseController::class, 'updateQuestion'])->name('courses.questions.update');
         Route::post('courses/{course}/lessons/reorder', [ClientCourseController::class, 'reorderLessons'])->name('courses.lessons.reorder');
         Route::get('courses/{course}/preview', [ClientCourseController::class, 'preview'])->name('courses.preview');
+        Route::get('courses/{course}/assign-users', [ClientCourseController::class, 'assignUsers'])->name('courses.assign-users');
+        Route::post('courses/{course}/assign-users', [ClientCourseController::class, 'assignUsersSave'])->name('courses.assign-users.save');
     });
 
     // ── Manager Routes ──

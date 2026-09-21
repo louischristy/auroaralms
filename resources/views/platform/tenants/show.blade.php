@@ -60,6 +60,54 @@
         </div>
     </div>
 
+    {{-- Tenant Users --}}
+    <div class="card">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="text-lg font-medium text-gray-800">Users ({{ $tenant->users->count() }})</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="text-left px-4 py-3 font-medium text-gray-600">Name</th>
+                        <th class="text-left px-4 py-3 font-medium text-gray-600">Email</th>
+                        <th class="text-left px-4 py-3 font-medium text-gray-600">Role</th>
+                        <th class="text-left px-4 py-3 font-medium text-gray-600">Department</th>
+                        <th class="text-center px-4 py-3 font-medium text-gray-600">Status</th>
+                        <th class="text-center px-4 py-3 font-medium text-gray-600">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    @forelse($tenant->users as $user)
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 font-medium text-gray-900">{{ $user->name }}</td>
+                            <td class="px-4 py-3 text-gray-500">{{ $user->email }}</td>
+                            <td class="px-4 py-3 text-gray-500">{{ $user->roles->pluck('name')->map(fn($r) => ucwords(str_replace('-', ' ', $r)))->implode(', ') ?: '—' }}</td>
+                            <td class="px-4 py-3 text-gray-500">{{ $user->department->name ?? '—' }}</td>
+                            <td class="px-4 py-3 text-center">
+                                @if($user->is_active)
+                                    <span class="badge-success">Active</span>
+                                @else
+                                    <span class="badge-danger">Inactive</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <form method="POST" action="{{ route('platform.tenants.reset-user-password', [$tenant, $user]) }}" class="inline">
+                                    @csrf
+                                    <button type="submit" class="text-xs text-blue-600 hover:text-blue-800 font-medium" title="Send password reset email">Reset Password</button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="px-4 py-8 text-center text-gray-400">No users in this tenant.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     {{-- Security Settings --}}
     <div class="card p-6 space-y-4">
         <h3 class="text-lg font-medium text-gray-800">Security Settings</h3>
