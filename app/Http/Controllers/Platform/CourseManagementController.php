@@ -118,6 +118,7 @@ class CourseManagementController extends Controller
     {
         $courses = Course::whereNull('tenant_id')
             ->where('is_active', true)
+            ->orderBy('category')
             ->orderBy('title')
             ->get();
 
@@ -129,7 +130,9 @@ class CourseManagementController extends Controller
             $assignments[$course->id] = $course->tenants()->pluck('tenants.id')->toArray();
         }
 
-        return view('platform.courses.bulk-assign', compact('courses', 'tenants', 'assignments'));
+        $categories = $courses->pluck('category')->unique()->filter()->sort()->values();
+
+        return view('platform.courses.bulk-assign', compact('courses', 'tenants', 'assignments', 'categories'));
     }
 
     public function bulkAssignSave(Request $request)
