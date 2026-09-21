@@ -49,6 +49,8 @@
                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Completed</th>
                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Overdue</th>
                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Completion %</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Best Quiz Score</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Quiz Attempts</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
@@ -71,9 +73,24 @@
                             <span class="text-xs font-medium">{{ $user->completion_rate }}%</span>
                         </div>
                     </td>
+                    <td class="px-6 py-3 text-center">
+                        @if($user->quiz_best_score !== null)
+                            <span class="font-medium {{ $user->quiz_best_score >= 80 ? 'text-green-600' : ($user->quiz_best_score >= 50 ? 'text-yellow-600' : 'text-red-500') }}">{{ $user->quiz_best_score }}%</span>
+                        @else
+                            <span class="text-gray-400">—</span>
+                        @endif
+                    </td>
+                    <td class="px-6 py-3 text-center">
+                        @if($user->quiz_attempts > 0)
+                            <span class="text-gray-700">{{ $user->quiz_attempts }}</span>
+                            <span class="text-xs text-gray-400">({{ $user->quiz_passed }} passed)</span>
+                        @else
+                            <span class="text-gray-400">—</span>
+                        @endif
+                    </td>
                 </tr>
                 @empty
-                <tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">No users found.</td></tr>
+                <tr><td colspan="8" class="px-6 py-8 text-center text-gray-500">No users found.</td></tr>
                 @endforelse
             </tbody>
         </table>

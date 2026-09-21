@@ -223,12 +223,19 @@ class CourseController extends Controller
             ->where('passed', true)
             ->exists();
 
+        // Get past attempts for history display
+        $pastAttempts = QuizAttempt::where('user_id', $user->id)
+            ->where('quiz_id', $quiz->id)
+            ->select('id', 'user_id', 'quiz_id', 'course_id', 'score', 'passed', 'correct_count', 'total_questions', 'completed_at', 'created_at')
+            ->orderByDesc('created_at')
+            ->get();
+
         $questions = $quiz->questions()->with('answers')->get();
         if ($quiz->shuffle_questions) {
             $questions = $questions->shuffle();
         }
 
-        return view('employee.courses.quiz', compact('course', 'quiz', 'questions', 'remaining', 'alreadyPassed'));
+        return view('employee.courses.quiz', compact('course', 'quiz', 'questions', 'remaining', 'alreadyPassed', 'pastAttempts'));
     }
 
     /**

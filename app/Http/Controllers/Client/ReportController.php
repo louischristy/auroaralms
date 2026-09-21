@@ -48,9 +48,28 @@ class ReportController extends Controller
 
         $users = $query->orderBy('name')->paginate(30)->appends($request->query());
 
-        $users->getCollection()->transform(function ($user) {
+        // Get quiz attempt stats per user
+        $quizStats = DB::table('quiz_attempts')
+            ->join('courses', 'courses.id', '=', 'quiz_attempts.course_id')
+            ->whereIn('quiz_attempts.user_id', $users->pluck('id'))
+            ->whereNotNull('quiz_attempts.completed_at')
+            ->select(
+                'quiz_attempts.user_id',
+                DB::raw('COUNT(*) as total_attempts'),
+                DB::raw('MAX(quiz_attempts.score) as best_score'),
+                DB::raw("SUM(CASE WHEN quiz_attempts.passed = 1 THEN 1 ELSE 0 END) as passed_count")
+            )
+            ->groupBy('quiz_attempts.user_id')
+            ->get()
+            ->keyBy('user_id');
+
+        $users->getCollection()->transform(function ($user) use ($quizStats) {
             $user->completion_rate = $user->enrolled > 0
                 ? round(($user->completed / $user->enrolled) * 100, 1) : 0;
+            $stats = $quizStats->get($user->id);
+            $user->quiz_best_score = $stats?->best_score ?? null;
+            $user->quiz_attempts = $stats?->total_attempts ?? 0;
+            $user->quiz_passed = $stats?->passed_count ?? 0;
             return $user;
         });
 
