@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Badge;
 use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\CourseEnrollment;
@@ -12,6 +13,7 @@ use App\Models\PolicyAcknowledgment;
 use App\Models\QuizAttempt;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\UserBadge;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -263,6 +265,36 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        // Gamification stats
+        $passedQuizzes = QuizAttempt::where('user_id', $user->id)->where('passed', true)->count();
+        $badgesCount = UserBadge::where('user_id', $user->id)->count();
+        $totalPoints = ($completed->count() * 100) + ($passedQuizzes * 50) + ($badgesCount * 25);
+
+        // Recent badges (last 3)
+        $recentBadges = UserBadge::where('user_id', $user->id)
+            ->with('badge')
+            ->orderByDesc('earned_at')
+            ->limit(3)
+            ->get();
+
+        // User's rank within tenant
+        $tenantUsers = User::where('tenant_id', $user->tenant_id)
+            ->where('is_active', true)
+            ->withCount([
+                'courseEnrollments as courses_completed' => fn($q) => $q->where('status', 'completed'),
+                'quizAttempts as passed_quizzes' => fn($q) => $q->where('passed', true),
+                'badges as badges_count',
+            ])
+            ->get()
+            ->map(function ($u) {
+                $u->total_points = ($u->courses_completed * 100) + ($u->passed_quizzes * 50) + ($u->badges_count * 25);
+                return $u;
+            })
+            ->sortByDesc('total_points')
+            ->values();
+        $rank = $tenantUsers->search(fn($u) => $u->id === $user->id);
+        $userRank = $rank !== false ? $rank + 1 : $tenantUsers->count();
+
         return view('dashboard.employee', [
             'user' => $user,
             'stats' => [
@@ -275,6 +307,13 @@ class DashboardController extends Controller
             ],
             'inProgressCourses' => $inProgress,
             'recentLessons' => $recentLessons,
+            'gamification' => [
+                'total_points' => $totalPoints,
+                'badges_count' => $badgesCount,
+                'total_badges' => Badge::active()->count(),
+                'rank' => $userRank,
+                'recent_badges' => $recentBadges,
+            ],
         ]);
     }
 

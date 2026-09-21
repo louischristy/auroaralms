@@ -59,6 +59,40 @@
         </div>
     @endif
 
+    {{-- Gamification --}}
+    @if(isset($gamification))
+    <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-800">Your Progress</h2>
+            <a href="{{ route('learn.leaderboard.index') }}" class="text-sm font-medium hover:underline" style="color: var(--color-primary)">View Leaderboard &rarr;</a>
+        </div>
+        <div class="grid grid-cols-3 gap-4 mb-4">
+            <div class="text-center p-3 rounded-lg bg-amber-50">
+                <p class="text-2xl font-bold text-amber-600">{{ number_format($gamification['total_points']) }}</p>
+                <p class="text-xs text-gray-500">Points</p>
+            </div>
+            <div class="text-center p-3 rounded-lg bg-indigo-50">
+                <p class="text-2xl font-bold text-indigo-600">#{{ $gamification['rank'] }}</p>
+                <p class="text-xs text-gray-500">Rank</p>
+            </div>
+            <div class="text-center p-3 rounded-lg bg-emerald-50">
+                <p class="text-2xl font-bold text-emerald-600">{{ $gamification['badges_count'] }}/{{ $gamification['total_badges'] }}</p>
+                <p class="text-xs text-gray-500">Badges</p>
+            </div>
+        </div>
+        @if($gamification['recent_badges']->isNotEmpty())
+            <div class="flex items-center gap-3 pt-3 border-t border-gray-100">
+                <span class="text-xs text-gray-500 shrink-0">Recent:</span>
+                @foreach($gamification['recent_badges'] as $ub)
+                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-50 text-xs font-medium text-indigo-700" title="{{ $ub->badge->description }}">
+                        {{ $ub->badge->icon }} {{ $ub->badge->name }}
+                    </span>
+                @endforeach
+            </div>
+        @endif
+    </div>
+    @endif
+
     {{-- Quick Links --}}
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <a href="{{ route('learn.courses.index') }}" class="card p-5 hover:shadow-md transition-shadow group">

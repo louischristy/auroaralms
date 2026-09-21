@@ -9,6 +9,7 @@ use App\Models\Lesson;
 use App\Models\LessonCompletion;
 use App\Models\QuizAttempt;
 use App\Models\QuizResponse;
+use App\Services\BadgeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -162,6 +163,14 @@ class CourseController extends Controller
             $enrollment->recalculateProgress();
         }
 
+        // Evaluate badges after lesson completion
+        $awarded = app(BadgeService::class)->evaluate($user);
+        $badgeMsg = '';
+        if (!empty($awarded)) {
+            $names = array_map(fn($b) => $b->icon . ' ' . $b->name, $awarded);
+            $badgeMsg = ' Badge earned: ' . implode(', ', $names) . '!';
+        }
+
         // Go to next lesson or back to course
         $nextLesson = Lesson::where('course_id', $course->id)
             ->where('is_active', true)
@@ -171,11 +180,11 @@ class CourseController extends Controller
 
         if ($nextLesson) {
             return redirect()->route('learn.courses.lesson', [$course, $nextLesson])
-                ->with('success', 'Lesson completed! Moving to next lesson.');
+                ->with('success', 'Lesson completed! Moving to next lesson.' . $badgeMsg);
         }
 
         return redirect()->route('learn.courses.show', $course)
-            ->with('success', 'Lesson completed! ' . ($course->quiz ? 'Take the quiz to finish the course.' : 'Course complete!'));
+            ->with('success', 'Lesson completed! ' . ($course->quiz ? 'Take the quiz to finish the course.' : 'Course complete!') . $badgeMsg);
     }
 
     /**
@@ -299,7 +308,16 @@ class CourseController extends Controller
             $enrollment->recalculateProgress();
         }
 
-        return redirect()->route('learn.courses.quiz-result', [$course, $attempt]);
+        // Evaluate badges after quiz submission
+        $awarded = app(BadgeService::class)->evaluate($user);
+        $badgeMsg = '';
+        if (!empty($awarded)) {
+            $names = array_map(fn($b) => $b->icon . ' ' . $b->name, $awarded);
+            $badgeMsg = 'Badge earned: ' . implode(', ', $names) . '!';
+        }
+
+        return redirect()->route('learn.courses.quiz-result', [$course, $attempt])
+            ->with($badgeMsg ? 'badge' : 'noop', $badgeMsg);
     }
 
     /**

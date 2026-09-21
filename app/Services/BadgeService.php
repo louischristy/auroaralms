@@ -89,13 +89,8 @@ class BadgeService
 
     private function countPhishingReports(User $user): int
     {
-        // Check if PhishingReport model exists; return 0 if not yet implemented
-        if (!class_exists(\App\Models\PhishingReport::class)) {
-            return 0;
-        }
-
-        return \App\Models\PhishingReport::where('user_id', $user->id)
-            ->where('reported', true)
+        return \App\Models\PhishingResult::where('user_id', $user->id)
+            ->where('status', 'reported')
             ->count();
     }
 }
