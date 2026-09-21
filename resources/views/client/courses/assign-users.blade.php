@@ -8,13 +8,24 @@
             <h1 class="text-2xl font-bold text-gray-900">Assign Users to Course</h1>
             <p class="text-sm text-gray-500 mt-1">{{ $course->title }}</p>
         </div>
-        <a href="{{ route('manage.courses.show', $course) }}" class="btn-outline">Back to Course</a>
+        <a href="{{ route('manage.courses.edit', $course) }}" class="btn-outline">Back to Course</a>
     </div>
+
+    @php
+        // Build department-to-user mapping for Alpine
+        $deptUserMap = [];
+        foreach ($users as $u) {
+            if ($u->department_id) {
+                $deptUserMap[$u->department_id][] = $u->id;
+            }
+        }
+    @endphp
 
     <form method="POST" action="{{ route('manage.courses.assign-users.save', $course) }}" class="space-y-6"
           x-data="{
-              selectedUsers: {{ json_encode($assignedUserIds) }},
+              selectedUsers: {{ json_encode(array_values($assignedUserIds)) }},
               searchTerm: '',
+              deptUsers: {{ json_encode($deptUserMap) }},
               toggleUser(id) {
                   const idx = this.selectedUsers.indexOf(id);
                   if (idx > -1) { this.selectedUsers.splice(idx, 1); }
@@ -22,8 +33,8 @@
               },
               isSelected(id) { return this.selectedUsers.includes(id); },
               selectDept(deptId) {
-                  document.querySelectorAll('[data-dept=\"' + deptId + '\"]').forEach(el => {
-                      const uid = parseInt(el.dataset.uid);
+                  const uids = this.deptUsers[deptId] || [];
+                  uids.forEach(uid => {
                       if (!this.selectedUsers.includes(uid)) { this.selectedUsers.push(uid); }
                   });
               },
@@ -83,8 +94,7 @@
             <div class="max-h-96 overflow-y-auto divide-y divide-gray-50">
                 @foreach($users as $u)
                     <label class="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 cursor-pointer"
-                           x-show="matchesSearch({{ json_encode($u->name) }}, {{ json_encode($u->email) }})"
-                           data-dept="{{ $u->department_id }}" data-uid="{{ $u->id }}">
+                           x-show="matchesSearch({{ json_encode($u->name) }}, {{ json_encode($u->email) }})">
                         <input type="checkbox" name="user_ids[]" value="{{ $u->id }}"
                                x-bind:checked="isSelected({{ $u->id }})"
                                x-on:change="toggleUser({{ $u->id }})"
@@ -105,7 +115,7 @@
 
         <div class="flex items-center gap-3">
             <button type="submit" class="btn-primary">Save Assignments</button>
-            <a href="{{ route('manage.courses.show', $course) }}" class="btn-outline">Cancel</a>
+            <a href="{{ route('manage.courses.edit', $course) }}" class="btn-outline">Cancel</a>
         </div>
     </form>
 </div>

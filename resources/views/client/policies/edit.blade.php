@@ -3,7 +3,6 @@
 
 @section('content')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/quill/2.0.3/quill.snow.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/quill/2.0.3/quill.min.js"></script>
 
 <div class="max-w-3xl space-y-6">
     <div>
@@ -32,30 +31,11 @@
             @error('title')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
 
-        <div x-data x-init="
-            if (typeof Quill !== 'undefined') {
-                let q = new Quill($refs.policyEditor, {
-                    theme: 'snow',
-                    modules: {
-                        toolbar: [
-                            [{ header: [2, 3, false] }],
-                            ['bold', 'italic', 'underline'],
-                            [{ list: 'ordered' }, { list: 'bullet' }],
-                            ['link'],
-                            ['clean']
-                        ]
-                    }
-                });
-                let existing = {{ json_encode(old('content', $policy->content)) }};
-                if (existing) {
-                    q.root.innerHTML = existing;
-                }
-                q.on('text-change', function() { $refs.policyContent.value = q.root.innerHTML; });
-            }
-        ">
+        <div>
             <label class="label">Content *</label>
-            <div x-ref="policyEditor" class="bg-white" style="min-height: 300px;"></div>
-            <textarea x-ref="policyContent" name="content" class="hidden" required>{{ old('content', $policy->content) }}</textarea>
+            <div id="policy-editor-container" class="border border-gray-300 rounded-lg overflow-hidden" style="min-height: 300px; display: none;"></div>
+            <textarea id="policy-content" name="content" rows="12" required
+                      class="input w-full" placeholder="Enter policy content (HTML supported)...">{{ old('content', $policy->content) }}</textarea>
             @error('content')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
 
@@ -84,4 +64,7 @@
         </div>
     </form>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quill/2.0.3/quill.min.js"></script>
+<script src="{{ asset('js/policy-editor.js') }}"></script>
 @endsection
