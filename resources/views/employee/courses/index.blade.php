@@ -32,8 +32,22 @@
                     @foreach($categoryCourses as $course)
                         @php
                             $enrollment = $enrollments[$course->id] ?? null;
-                            $progress = $enrollment?->progress_percent ?? 0;
-                            $status = $enrollment?->status ?? 'not_started';
+                            // Calculate progress from actual completion data (enrollment record may be stale)
+                            $courseLessons = $course->lessons_count ?? 0;
+                            $completedLessonsCount = isset($completedLessonsMap[$course->id]) ? count($completedLessonsMap[$course->id]) : 0;
+                            $hasQuiz = isset($courseQuizMap[$course->id]);
+                            $quizPassedFlag = $quizPassedMap[$course->id] ?? false;
+                            if ($courseLessons === 0 && !$hasQuiz) {
+                                $calcProgress = 0;
+                            } elseif ($hasQuiz) {
+                                $lPart = $courseLessons > 0 ? ($completedLessonsCount / $courseLessons) * 80 : 80;
+                                $qPart = $quizPassedFlag ? 20 : 0;
+                                $calcProgress = (int) round($lPart + $qPart);
+                            } else {
+                                $calcProgress = $courseLessons > 0 ? (int) round(($completedLessonsCount / $courseLessons) * 100) : 0;
+                            }
+                            $progress = max($calcProgress, $enrollment?->progress_percent ?? 0);
+                            $status = $progress >= 100 ? 'completed' : ($enrollment?->status ?? 'not_started');
                         @endphp
                         <a href="{{ route('learn.courses.show', $course) }}" class="card hover:shadow-md transition-shadow">
                             <div class="p-5">

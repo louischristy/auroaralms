@@ -53,7 +53,39 @@ class CourseController extends Controller
             ->get()
             ->keyBy('course_id');
 
-        return view('employee.courses.index', compact('courses', 'enrollments'));
+        // Get completed lessons per course for accurate progress calculation
+        $completedLessonsMap = LessonCompletion::where('user_id', $user->id)
+            ->pluck('lesson_id', 'course_id')
+            ->groupBy(fn($val, $key) => $key)
+            ->map(fn($group) => $group->values()->toArray())
+            ->toArray();
+
+        // Actually need to group properly
+        $completedLessonsRaw = LessonCompletion::where('user_id', $user->id)->get(['lesson_id', 'course_id']);
+        $completedLessonsMap = [];
+        foreach ($completedLessonsRaw as $lc) {
+            $completedLessonsMap[$lc->course_id][] = $lc->lesson_id;
+        }
+
+        // Get quiz info per course
+        $courseQuizMap = [];
+        $quizPassedMap = [];
+        $quizIds = \App\Models\Quiz::whereIn('course_id', $courseIds)->pluck('id', 'course_id');
+        foreach ($quizIds as $cid => $qid) {
+            $courseQuizMap[$cid] = $qid;
+        }
+        if ($quizIds->isNotEmpty()) {
+            $passedQuizCourseIds = QuizAttempt::where('user_id', $user->id)
+                ->whereIn('quiz_id', $quizIds->values())
+                ->where('passed', true)
+                ->pluck('quiz_id')
+                ->unique();
+            foreach ($quizIds as $cid => $qid) {
+                $quizPassedMap[$cid] = $passedQuizCourseIds->contains($qid);
+            }
+        }
+
+        return view('employee.courses.index', compact('courses', 'enrollments', 'completedLessonsMap', 'courseQuizMap', 'quizPassedMap'));
     }
 
     /**

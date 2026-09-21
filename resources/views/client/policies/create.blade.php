@@ -24,32 +24,7 @@
         </form>
     </div>
 
-    <form id="policy-form" method="POST" action="{{ route('manage.policies.store') }}" class="card p-6 space-y-5"
-          x-data="{
-              content: {{ json_encode(old('content', $importedContent ?? '')) }},
-              quill: null,
-              init() {
-                  this.quill = new Quill(this.$refs.editor, {
-                      theme: 'snow',
-                      modules: {
-                          toolbar: [
-                              [{ header: [2, 3, false] }],
-                              ['bold', 'italic', 'underline'],
-                              [{ list: 'ordered' }, { list: 'bullet' }],
-                              ['link'],
-                              ['clean']
-                          ]
-                      }
-                  });
-                  if (this.content) {
-                      this.quill.root.innerHTML = this.content;
-                  }
-              },
-              submitForm() {
-                  this.content = this.quill.root.innerHTML;
-              }
-          }"
-          x-on:submit="submitForm()">
+    <form id="policy-form" method="POST" action="{{ route('manage.policies.store') }}" class="card p-6 space-y-5">
         @csrf
 
         @if(!empty($tenants))
@@ -70,10 +45,30 @@
             @error('title')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
 
-        <div>
+        <div x-data x-init="
+            if (typeof Quill !== 'undefined') {
+                let q = new Quill($refs.policyEditor, {
+                    theme: 'snow',
+                    modules: {
+                        toolbar: [
+                            [{ header: [2, 3, false] }],
+                            ['bold', 'italic', 'underline'],
+                            [{ list: 'ordered' }, { list: 'bullet' }],
+                            ['link'],
+                            ['clean']
+                        ]
+                    }
+                });
+                let imported = {{ json_encode(old('content', $importedContent ?? '')) }};
+                if (imported) {
+                    q.root.innerHTML = imported;
+                }
+                q.on('text-change', function() { $refs.policyContent.value = q.root.innerHTML; });
+            }
+        ">
             <label class="label">Content *</label>
-            <input type="hidden" name="content" x-model="content">
-            <div x-ref="editor" class="bg-white border border-gray-300 rounded-lg" style="min-height: 300px;"></div>
+            <div x-ref="policyEditor" class="bg-white" style="min-height: 300px;"></div>
+            <textarea x-ref="policyContent" name="content" class="hidden" required>{{ old('content', $importedContent ?? '') }}</textarea>
             @error('content')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
 

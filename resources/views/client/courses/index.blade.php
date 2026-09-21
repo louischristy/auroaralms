@@ -52,6 +52,7 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 text-right space-x-3">
+                            <a href="{{ route('manage.courses.assign-users', $course) }}" class="text-green-600 hover:text-green-800 text-sm font-medium">Assign</a>
                             <a href="{{ route('manage.courses.edit', $course) }}" class="text-secondary hover:text-primary text-sm font-medium">Edit</a>
                             <form method="POST" action="{{ route('manage.courses.destroy', $course) }}" class="inline" onsubmit="return confirm('Delete this course?')">
                                 @csrf @method('DELETE')
@@ -69,5 +70,40 @@
     </div>
 
     {{ $courses->links() }}
+
+    {{-- Platform courses available for assignment --}}
+    @if($platformCourses->isNotEmpty())
+    <div class="mt-8">
+        <h2 class="text-lg font-semibold text-gray-900 mb-1">Platform Courses</h2>
+        <p class="text-sm text-gray-500 mb-4">Assign platform catalog courses to specific users or departments.</p>
+        <div class="card overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Lessons</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100">
+                    @foreach($platformCourses as $course)
+                        <tr>
+                            <td class="px-6 py-4">
+                                <p class="font-medium text-gray-900">{{ $course->title }}</p>
+                                <p class="text-xs text-gray-400">{{ Str::limit($course->description, 60) }}</p>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600">{{ $course->category }}</td>
+                            <td class="px-6 py-4 text-center text-sm text-gray-600">{{ $course->lessons_count }}</td>
+                            <td class="px-6 py-4 text-right">
+                                <a href="{{ route('manage.courses.assign-users', $course) }}" class="text-green-600 hover:text-green-800 text-sm font-medium">Assign Users</a>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
 </div>
 @endsection

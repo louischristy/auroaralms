@@ -50,6 +50,11 @@ class ClientCourseController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->paginate(20);
             $platformCourseCount = Course::whereNull('tenant_id')->count();
+            $platformCourses = Course::whereNull('tenant_id')
+                ->where('is_active', true)
+                ->withCount('lessons')
+                ->orderBy('title')
+                ->get();
         } else {
             $courses = Course::tenantCourses($tenantId)
                 ->withCount('lessons')
@@ -58,9 +63,20 @@ class ClientCourseController extends Controller
             $platformCourseCount = DB::table('course_tenant')
                 ->where('tenant_id', $tenantId)
                 ->count();
+            // Get platform courses assigned to this tenant
+            $assignedPlatformIds = DB::table('course_tenant')
+                ->where('tenant_id', $tenantId)
+                ->pluck('course_id');
+            $platformCourses = Course::withoutTenantScope()
+                ->whereNull('tenant_id')
+                ->where('is_active', true)
+                ->whereIn('id', $assignedPlatformIds)
+                ->withCount('lessons')
+                ->orderBy('title')
+                ->get();
         }
 
-        return view('client.courses.index', compact('courses', 'platformCourseCount'));
+        return view('client.courses.index', compact('courses', 'platformCourseCount', 'platformCourses'));
     }
 
     public function create()
