@@ -122,10 +122,10 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::delete('categories/{category}', [CourseCategoryController::class, 'destroy'])->name('categories.destroy');
 
         // Course Management (catalog)
-        Route::resource('courses', CourseManagementController::class);
-        Route::post('courses/{course}/assign-tenants', [CourseManagementController::class, 'assignTenants'])->name('courses.assign-tenants');
         Route::get('courses/bulk-assign', [CourseManagementController::class, 'bulkAssign'])->name('courses.bulk-assign');
         Route::post('courses/bulk-assign', [CourseManagementController::class, 'bulkAssignSave'])->name('courses.bulk-assign.save');
+        Route::resource('courses', CourseManagementController::class);
+        Route::post('courses/{course}/assign-tenants', [CourseManagementController::class, 'assignTenants'])->name('courses.assign-tenants');
         Route::post('courses/{course}/lessons', [CourseManagementController::class, 'storeLesson'])->name('courses.lessons.store');
         Route::put('courses/{course}/lessons/{lesson}', [CourseManagementController::class, 'updateLesson'])->name('courses.lessons.update');
         Route::delete('courses/{course}/lessons/{lesson}', [CourseManagementController::class, 'destroyLesson'])->name('courses.lessons.destroy');

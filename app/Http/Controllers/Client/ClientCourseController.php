@@ -51,8 +51,9 @@ class ClientCourseController extends Controller
         abort(Response::HTTP_FORBIDDEN, 'This course does not belong to your organization.');
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $viewMode = $request->query('view', 'builder');
         $tenantId = $this->tenantId();
 
         // Platform admin sees all tenant-created courses across all tenants
@@ -89,7 +90,7 @@ class ClientCourseController extends Controller
                 ->get();
         }
 
-        return view('client.courses.index', compact('courses', 'platformCourseCount', 'platformCourses'));
+        return view('client.courses.index', compact('courses', 'platformCourseCount', 'platformCourses', 'viewMode'));
     }
 
     public function create()
