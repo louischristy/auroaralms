@@ -116,8 +116,10 @@ class TenantController extends Controller
     /**
      * Send password reset link to a tenant user.
      */
-    public function resetUserPassword(Tenant $tenant, \App\Models\User $user)
+    public function resetUserPassword(Tenant $tenant, int $user)
     {
+        $user = \App\Models\User::withoutTenantScope()->findOrFail($user);
+
         if ($user->tenant_id !== $tenant->id) {
             abort(403, 'User does not belong to this tenant.');
         }

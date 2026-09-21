@@ -30,8 +30,10 @@ class PlatformUserController extends Controller
         return view('platform.users.index', compact('users', 'tenants'));
     }
 
-    public function resetPassword(User $user)
+    public function resetPassword(int $user)
     {
+        $user = User::withoutTenantScope()->findOrFail($user);
+
         if (!$user->tenant_id) {
             abort(403, 'Cannot reset platform admin password from here.');
         }

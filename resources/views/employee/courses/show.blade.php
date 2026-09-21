@@ -5,7 +5,22 @@
 @php
     $totalLessons = $course->lessons->count();
     $completedCount = count($completedLessonIds);
-    $progressPercent = $enrollment->progress_percent ?? 0;
+    $hasQuiz = $course->quiz !== null;
+    $quizPassedForProgress = $quizPassed;
+
+    // Calculate progress from actual data (not just enrollment record)
+    if ($totalLessons === 0 && !$hasQuiz) {
+        $calculatedProgress = 0;
+    } elseif ($hasQuiz) {
+        $lessonPart = $totalLessons > 0 ? ($completedCount / $totalLessons) * 80 : 80;
+        $quizPart = $quizPassedForProgress ? 20 : 0;
+        $calculatedProgress = (int) round($lessonPart + $quizPart);
+    } else {
+        $calculatedProgress = $totalLessons > 0 ? (int) round(($completedCount / $totalLessons) * 100) : 0;
+    }
+
+    // Use calculated progress (more reliable) or enrollment if higher
+    $progressPercent = max($calculatedProgress, $enrollment->progress_percent ?? 0);
     $firstIncomplete = $course->lessons->first(fn($l) => !in_array($l->id, $completedLessonIds));
 @endphp
 
