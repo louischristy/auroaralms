@@ -38,10 +38,12 @@ class CertificateTemplateController extends Controller
             'config.signatures' => 'nullable|array|max:3',
             'config.signatures.*.name' => 'nullable|string|max:255',
             'config.signatures.*.title' => 'nullable|string|max:255',
+            'signature_images.*' => 'nullable|image|mimes:png,jpg,jpeg,svg,webp|max:1024',
         ]);
 
         // Clean config
         $config = $this->cleanConfig($validated['config']);
+        $config = $this->handleSignatureImages($request, $config);
 
         // If setting as default, unset other defaults
         if (!empty($validated['is_default'])) {
@@ -84,9 +86,11 @@ class CertificateTemplateController extends Controller
             'config.signatures' => 'nullable|array|max:3',
             'config.signatures.*.name' => 'nullable|string|max:255',
             'config.signatures.*.title' => 'nullable|string|max:255',
+            'signature_images.*' => 'nullable|image|mimes:png,jpg,jpeg,svg,webp|max:1024',
         ]);
 
         $config = $this->cleanConfig($validated['config']);
+        $config = $this->handleSignatureImages($request, $config, $template);
 
         if (!empty($validated['is_default']) && !$template->is_default) {
             CertificateTemplate::withoutTenantScope()

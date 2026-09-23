@@ -196,10 +196,20 @@
         text-align: center;
         min-width: 150px;
     }
+    .signature-img {
+        height: 50px;
+        max-width: 150px;
+        object-fit: contain;
+        margin: 0 auto 5px;
+        display: block;
+    }
     .signature-line {
         border-top: 1px solid #999;
-        margin-top: 35px;
+        margin-top: 10px;
         padding-top: 5px;
+    }
+    .signature-line.no-image {
+        margin-top: 35px;
     }
     .signature-name {
         font-size: 13px;
@@ -308,7 +318,12 @@
             @foreach($signatures as $sig)
                 @if(!empty($sig['name']) || !empty($sig['title']))
                     <div class="signature-block">
-                        <div class="signature-line">
+                        @if(!empty($sig['image']))
+                            <img src="{{ !empty($isPreview) ? asset($sig['image']) : public_path(ltrim($sig['image'], '/')) }}" alt="Signature" class="signature-img">
+                            <div class="signature-line">
+                        @else
+                            <div class="signature-line no-image">
+                        @endif
                             <div class="signature-name">{{ $sig['name'] ?? '' }}</div>
                             <div class="signature-title">{{ $sig['title'] ?? '' }}</div>
                         </div>

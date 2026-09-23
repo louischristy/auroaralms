@@ -17,7 +17,7 @@
         </div>
     @endif
 
-    <form method="POST"
+    <form method="POST" enctype="multipart/form-data"
           action="{{ $template ? route('platform.certificates.templates.update', $template->id) : route('platform.certificates.templates.store') }}"
           class="space-y-6">
         @csrf
@@ -172,6 +172,20 @@
                             <input type="text" name="config[signatures][{{ $i }}][title]"
                                    value="{{ old('config.signatures.' . $i . '.title', $config['signatures'][$i]['title'] ?? '') }}"
                                    class="input" placeholder="e.g. Chief Information Security Officer">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="label">Signature Image</label>
+                            @if(!empty($config['signatures'][$i]['image']))
+                                <div class="flex items-center gap-3 mb-2">
+                                    <img src="{{ $config['signatures'][$i]['image'] }}" alt="Signature" class="h-12 max-w-48 object-contain border border-gray-200 rounded bg-white p-1">
+                                    <label class="flex items-center gap-1 text-sm text-gray-500">
+                                        <input type="checkbox" name="remove_signature_image[{{ $i }}]" value="1" class="rounded border-gray-300">
+                                        Remove
+                                    </label>
+                                </div>
+                            @endif
+                            <input type="file" name="signature_images[{{ $i }}]" accept="image/png,image/jpeg,image/svg+xml,image/webp" class="input text-sm">
+                            <p class="text-xs text-gray-400 mt-1">Upload a signature image (PNG with transparent background recommended). Max 1MB.</p>
                         </div>
                     </div>
                 @endfor
