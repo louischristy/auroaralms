@@ -26,6 +26,7 @@ class Tenant extends Model
         'max_users',
         'subscription_plan',
         'subscription_expires_at',
+        'selected_certificate_template_id',
     ];
 
     protected $casts = [

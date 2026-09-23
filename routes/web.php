@@ -16,6 +16,7 @@ use App\Http\Controllers\Platform\CourseManagementController;
 use App\Http\Controllers\Platform\CourseCategoryController;
 use App\Http\Controllers\Platform\ReportController as PlatformReportController;
 use App\Http\Controllers\Platform\TenantSsoController;
+use AppHttpControllersPlatformCertificateTemplateController;
 use App\Http\Controllers\Client\ReportController as ClientReportController;
 use App\Http\Controllers\Client\UserController;
 use App\Http\Controllers\Client\DepartmentController;
@@ -23,6 +24,7 @@ use App\Http\Controllers\Client\ClientCourseController;
 use App\Http\Controllers\Client\PhishingController;
 use App\Http\Controllers\Client\PolicyController;
 use App\Http\Controllers\Client\ClientSettingsController;
+use AppHttpControllersClientCertificateSettingsController;
 use App\Http\Controllers\Employee\CertificateController;
 use App\Http\Controllers\Employee\CourseController;
 use App\Http\Controllers\Employee\LeaderboardController;
@@ -113,6 +115,16 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::get('reports/course-performance', [PlatformReportController::class, 'coursePerformance'])->name('reports.course-performance');
         Route::get('reports/quiz-analytics', [PlatformReportController::class, 'quizAnalytics'])->name('reports.quiz-analytics');
 
+        // Certificate Templates
+        Route::get("certificates/templates", [CertificateTemplateController::class, "index"])->name("certificates.templates.index");
+        Route::get("certificates/templates/create", [CertificateTemplateController::class, "create"])->name("certificates.templates.create");
+        Route::post("certificates/templates", [CertificateTemplateController::class, "store"])->name("certificates.templates.store");
+        Route::get("certificates/templates/{id}/edit", [CertificateTemplateController::class, "edit"])->name("certificates.templates.edit");
+        Route::put("certificates/templates/{id}", [CertificateTemplateController::class, "update"])->name("certificates.templates.update");
+        Route::get("certificates/templates/{id}/preview", [CertificateTemplateController::class, "preview"])->name("certificates.templates.preview");
+        Route::patch("certificates/templates/{id}/toggle", [CertificateTemplateController::class, "toggleActive"])->name("certificates.templates.toggle");
+        Route::delete("certificates/templates/{id}", [CertificateTemplateController::class, "destroy"])->name("certificates.templates.destroy");
+
         // Audit Logs
         Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
         Route::get('audit-logs/{auditLog}', [AuditLogController::class, 'show'])->name('audit-logs.show');
@@ -179,6 +191,9 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::put("settings/email", [ClientSettingsController::class, "updateEmailSettings"])->name("settings.email.update");
         Route::delete("settings/email", [ClientSettingsController::class, "resetEmailSettings"])->name("settings.email.reset");
         Route::post("settings/email/test", [ClientSettingsController::class, "testEmail"])->name("settings.email.test");
+        Route::get("settings/certificates", [CertificateSettingsController::class, "index"])->name("settings.certificates");
+        Route::put("settings/certificates", [CertificateSettingsController::class, "update"])->name("settings.certificates.update");
+        Route::get("settings/certificates/{id}/preview", [CertificateSettingsController::class, "preview"])->name("settings.certificates.preview");
     });
 
     // ── Manager Routes ──
