@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Platform;
 use App\Http\Controllers\Controller;
 use App\Models\PlatformSetting;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
 
 class PlatformSettingController extends Controller
 {
@@ -15,6 +15,7 @@ class PlatformSettingController extends Controller
             'brand' => PlatformSetting::getGroup('brand'),
             'general' => PlatformSetting::getGroup('general'),
             'email' => PlatformSetting::getGroup('email'),
+            'smtp' => PlatformSetting::getGroup('smtp'),
             'security' => PlatformSetting::getGroup('security'),
         ];
 
@@ -50,7 +51,6 @@ class PlatformSettingController extends Controller
         if (isset($validated['settings'])) {
             foreach ($validated['settings'] as $group => $keys) {
                 foreach ($keys as $key => $value) {
-                    // Skip logo_path and favicon_path as they're handled above
                     if (in_array($key, ['logo_path', 'favicon_path'])) {
                         continue;
                     }
@@ -60,5 +60,33 @@ class PlatformSettingController extends Controller
         }
 
         return back()->with('success', 'Platform settings updated successfully.');
+    }
+
+    /**
+     * Send a test email to verify SMTP configuration.
+     */
+    public function testEmail(Request $request)
+    {
+        $request->validate([
+            'test_email' => ['required', 'email'],
+        ]);
+
+        try {
+            $platformName = PlatformSetting::get('brand.platform_name', 'Auroara LMS');
+
+            Mail::raw(
+                "This is a test email from {$platformName}.\n\n" .
+                "If you received this, your SMTP configuration is working correctly.\n\n" .
+                "Sent at: " . now()->format('Y-m-d H:i:s T'),
+                function ($message) use ($request, $platformName) {
+                    $message->to($request->test_email)
+                        ->subject("{$platformName} — SMTP Test Email");
+                }
+            );
+
+            return back()->with('success', 'Test email sent successfully to ' . $request->test_email . '. Please check the inbox.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to send test email: ' . $e->getMessage());
+        }
     }
 }

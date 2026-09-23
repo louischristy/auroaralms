@@ -2,15 +2,20 @@
 @section('title', 'Platform Settings — ' . ($branding['platform_name'] ?? 'Auroara LMS'))
 
 @section('content')
-<div class="max-w-3xl space-y-6">
+<div class="max-w-4xl space-y-6">
     <div>
         <h1 class="text-2xl font-bold text-gray-900">Platform Settings</h1>
-        <p class="text-sm text-gray-500 mt-1">Manage global platform configuration and branding.</p>
+        <p class="text-sm text-gray-500 mt-1">Manage global platform configuration, branding, and email delivery.</p>
     </div>
 
     @if(session('success'))
         <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-green-700 text-sm">
             {{ session('success') }}
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">
+            {{ session('error') }}
         </div>
     @endif
 
@@ -76,34 +81,15 @@
 
             {{-- Brand Colors --}}
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                @foreach(['primary_color' => '#2B4C7E', 'secondary_color' => '#3A7BD5', 'accent_color' => '#5BC0EB', 'neutral_color' => '#A8A9AD'] as $colorKey => $default)
                 <div>
-                    <label for="brand_primary_color" class="label">Primary Color</label>
+                    <label for="brand_{{ $colorKey }}" class="label">{{ ucwords(str_replace('_', ' ', $colorKey)) }}</label>
                     <div class="flex items-center gap-2">
-                        <input type="color" id="brand_primary_color_picker" value="{{ $settings['brand']['primary_color'] ?? '#2B4C7E' }}" class="w-10 h-10 rounded cursor-pointer border border-gray-300" onchange="document.getElementById('brand_primary_color').value = this.value">
-                        <input type="text" id="brand_primary_color" name="settings[brand][primary_color]" value="{{ old('settings.brand.primary_color', $settings['brand']['primary_color'] ?? '#2B4C7E') }}" class="input" onchange="document.getElementById('brand_primary_color_picker').value = this.value">
+                        <input type="color" id="brand_{{ $colorKey }}_picker" value="{{ $settings['brand'][$colorKey] ?? $default }}" class="w-10 h-10 rounded cursor-pointer border border-gray-300" onchange="document.getElementById('brand_{{ $colorKey }}').value = this.value">
+                        <input type="text" id="brand_{{ $colorKey }}" name="settings[brand][{{ $colorKey }}]" value="{{ old('settings.brand.' . $colorKey, $settings['brand'][$colorKey] ?? $default) }}" class="input" onchange="document.getElementById('brand_{{ $colorKey }}_picker').value = this.value">
                     </div>
                 </div>
-                <div>
-                    <label for="brand_secondary_color" class="label">Secondary Color</label>
-                    <div class="flex items-center gap-2">
-                        <input type="color" id="brand_secondary_color_picker" value="{{ $settings['brand']['secondary_color'] ?? '#3A7BD5' }}" class="w-10 h-10 rounded cursor-pointer border border-gray-300" onchange="document.getElementById('brand_secondary_color').value = this.value">
-                        <input type="text" id="brand_secondary_color" name="settings[brand][secondary_color]" value="{{ old('settings.brand.secondary_color', $settings['brand']['secondary_color'] ?? '#3A7BD5') }}" class="input" onchange="document.getElementById('brand_secondary_color_picker').value = this.value">
-                    </div>
-                </div>
-                <div>
-                    <label for="brand_accent_color" class="label">Accent Color</label>
-                    <div class="flex items-center gap-2">
-                        <input type="color" id="brand_accent_color_picker" value="{{ $settings['brand']['accent_color'] ?? '#5BC0EB' }}" class="w-10 h-10 rounded cursor-pointer border border-gray-300" onchange="document.getElementById('brand_accent_color').value = this.value">
-                        <input type="text" id="brand_accent_color" name="settings[brand][accent_color]" value="{{ old('settings.brand.accent_color', $settings['brand']['accent_color'] ?? '#5BC0EB') }}" class="input" onchange="document.getElementById('brand_accent_color_picker').value = this.value">
-                    </div>
-                </div>
-                <div>
-                    <label for="brand_neutral_color" class="label">Neutral Color</label>
-                    <div class="flex items-center gap-2">
-                        <input type="color" id="brand_neutral_color_picker" value="{{ $settings['brand']['neutral_color'] ?? '#A8A9AD' }}" class="w-10 h-10 rounded cursor-pointer border border-gray-300" onchange="document.getElementById('brand_neutral_color').value = this.value">
-                        <input type="text" id="brand_neutral_color" name="settings[brand][neutral_color]" value="{{ old('settings.brand.neutral_color', $settings['brand']['neutral_color'] ?? '#A8A9AD') }}" class="input" onchange="document.getElementById('brand_neutral_color_picker').value = this.value">
-                    </div>
-                </div>
+                @endforeach
             </div>
 
             {{-- Powered By --}}
@@ -138,19 +124,84 @@
             </div>
         </div>
 
-        {{-- Email Settings --}}
-        <div class="card p-6 space-y-4">
-            <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                Email
-            </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                @foreach($settings['email'] ?? [] as $key => $value)
+        {{-- SMTP / Email Configuration --}}
+        <div class="card p-6 space-y-5">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    Email / SMTP Configuration
+                </h3>
+                <span class="text-xs text-gray-400">Tenant admins can override these settings</span>
+            </div>
+            <p class="text-sm text-gray-500">Configure the SMTP server used for sending notification emails (course assignments, reminders, completions). Tenant admins can override these with their own SMTP settings.</p>
+
+            {{-- SMTP Server Settings --}}
+            <div class="border border-gray-200 rounded-lg p-4 space-y-4">
+                <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">SMTP Server</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label for="email_{{ $key }}" class="label">{{ ucwords(str_replace('_', ' ', $key)) }}</label>
-                        <input type="text" id="email_{{ $key }}" name="settings[email][{{ $key }}]" value="{{ old('settings.email.' . $key, $value) }}" class="input">
+                        <label for="smtp_host" class="label">SMTP Host</label>
+                        <input type="text" id="smtp_host" name="settings[smtp][host]" value="{{ old('settings.smtp.host', $settings['smtp']['host'] ?? '') }}" class="input" placeholder="smtp.gmail.com">
+                        <p class="text-xs text-gray-400 mt-1">e.g. smtp.gmail.com, smtp.office365.com</p>
                     </div>
-                @endforeach
+                    <div>
+                        <label for="smtp_port" class="label">SMTP Port</label>
+                        <input type="number" id="smtp_port" name="settings[smtp][port]" value="{{ old('settings.smtp.port', $settings['smtp']['port'] ?? '587') }}" class="input" placeholder="587">
+                        <p class="text-xs text-gray-400 mt-1">Common: 587 (TLS), 465 (SSL), 25 (none)</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="smtp_username" class="label">SMTP Username</label>
+                        <input type="text" id="smtp_username" name="settings[smtp][username]" value="{{ old('settings.smtp.username', $settings['smtp']['username'] ?? '') }}" class="input" placeholder="your-email@gmail.com" autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="smtp_password" class="label">SMTP Password</label>
+                        <input type="password" id="smtp_password" name="settings[smtp][password]" value="{{ old('settings.smtp.password', $settings['smtp']['password'] ?? '') }}" class="input" placeholder="••••••••" autocomplete="new-password">
+                        <p class="text-xs text-gray-400 mt-1">For Gmail, use an App Password</p>
+                    </div>
+                </div>
+                <div>
+                    <label for="smtp_encryption" class="label">Encryption</label>
+                    <select id="smtp_encryption" name="settings[smtp][encryption]" class="input w-auto">
+                        <option value="tls" {{ ($settings['smtp']['encryption'] ?? 'tls') === 'tls' ? 'selected' : '' }}>TLS (Recommended)</option>
+                        <option value="ssl" {{ ($settings['smtp']['encryption'] ?? '') === 'ssl' ? 'selected' : '' }}>SSL</option>
+                        <option value="none" {{ ($settings['smtp']['encryption'] ?? '') === 'none' ? 'selected' : '' }}>None</option>
+                    </select>
+                </div>
+            </div>
+
+            {{-- Sender Settings --}}
+            <div class="border border-gray-200 rounded-lg p-4 space-y-4">
+                <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Sender Details</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="email_from_name" class="label">From Name</label>
+                        <input type="text" id="email_from_name" name="settings[email][from_name]" value="{{ old('settings.email.from_name', $settings['email']['from_name'] ?? 'Auroara LMS') }}" class="input" placeholder="Auroara LMS">
+                    </div>
+                    <div>
+                        <label for="email_from_address" class="label">From Email Address</label>
+                        <input type="email" id="email_from_address" name="settings[email][from_address]" value="{{ old('settings.email.from_address', $settings['email']['from_address'] ?? '') }}" class="input" placeholder="noreply@yourcompany.com">
+                    </div>
+                </div>
+            </div>
+
+            {{-- Notification Settings --}}
+            <div class="border border-gray-200 rounded-lg p-4 space-y-4">
+                <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Notifications</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="email_welcome_email_enabled" class="label">Send Welcome Email on User Creation</label>
+                        <select id="email_welcome_email_enabled" name="settings[email][welcome_email_enabled]" class="input w-auto">
+                            <option value="1" {{ ($settings['email']['welcome_email_enabled'] ?? '1') == '1' ? 'selected' : '' }}>Yes</option>
+                            <option value="0" {{ ($settings['email']['welcome_email_enabled'] ?? '1') == '0' ? 'selected' : '' }}>No</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="email_course_reminder_days" class="label">Course Due Reminder (days before)</label>
+                        <input type="number" id="email_course_reminder_days" name="settings[email][course_reminder_days]" value="{{ old('settings.email.course_reminder_days', $settings['email']['course_reminder_days'] ?? '3') }}" class="input w-auto" min="1" max="30">
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -174,5 +225,25 @@
             <button type="submit" class="btn-primary">Save Settings</button>
         </div>
     </form>
+
+    {{-- Test Email Section (separate form) --}}
+    <div class="card p-6 space-y-4">
+        <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+            Send Test Email
+        </h3>
+        <p class="text-sm text-gray-500">Save your SMTP settings above first, then send a test email to verify the configuration works.</p>
+        <form method="POST" action="{{ route('platform.settings.test-email') }}" class="flex items-end gap-3">
+            @csrf
+            <div class="flex-1">
+                <label for="test_email_address" class="label">Recipient Email</label>
+                <input type="email" id="test_email_address" name="test_email" value="{{ auth()->user()->email }}" class="input" required>
+            </div>
+            <button type="submit" class="btn-primary whitespace-nowrap">
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                Send Test
+            </button>
+        </form>
+    </div>
 </div>
 @endsection

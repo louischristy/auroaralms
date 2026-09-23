@@ -22,6 +22,7 @@ use App\Http\Controllers\Client\DepartmentController;
 use App\Http\Controllers\Client\ClientCourseController;
 use App\Http\Controllers\Client\PhishingController;
 use App\Http\Controllers\Client\PolicyController;
+use App\Http\Controllers\Client\ClientSettingsController;
 use App\Http\Controllers\Employee\CertificateController;
 use App\Http\Controllers\Employee\CourseController;
 use App\Http\Controllers\Employee\LeaderboardController;
@@ -99,6 +100,7 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         // Platform Settings
         Route::get('settings', [PlatformSettingController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [PlatformSettingController::class, 'update'])->name('settings.update');
+        Route::post('settings/test-email', [PlatformSettingController::class, 'testEmail'])->name('settings.test-email');
 
         // All Users (cross-tenant view)
         Route::get('users', [PlatformUserController::class, 'index'])->name('users.index');
@@ -171,6 +173,12 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::get('courses/{course}/preview', [ClientCourseController::class, 'preview'])->name('courses.preview');
         Route::get('courses/{course}/assign-users', [ClientCourseController::class, 'assignUsers'])->name('courses.assign-users');
         Route::post('courses/{course}/assign-users', [ClientCourseController::class, 'assignUsersSave'])->name('courses.assign-users.save');
+
+        // Email Settings
+        Route::get("settings/email", [ClientSettingsController::class, "emailSettings"])->name("settings.email");
+        Route::put("settings/email", [ClientSettingsController::class, "updateEmailSettings"])->name("settings.email.update");
+        Route::delete("settings/email", [ClientSettingsController::class, "resetEmailSettings"])->name("settings.email.reset");
+        Route::post("settings/email/test", [ClientSettingsController::class, "testEmail"])->name("settings.email.test");
     });
 
     // ── Manager Routes ──

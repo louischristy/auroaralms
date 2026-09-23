@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\InjectBranding::class,
             \App\Http\Middleware\SecurityHeaders::class,
+            \App\Http\Middleware\TenantMailConfig::class,
         ]);
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
