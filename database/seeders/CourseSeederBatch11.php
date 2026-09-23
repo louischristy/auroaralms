@@ -38,7 +38,6 @@ class CourseSeederBatch11 extends Seeder
                 [
                     'course_id' => $course->id,
                     'title' => $quiz['title'],
-                    'passing_score' => $quiz['passing_score'],
                     'max_attempts' => $quiz['max_attempts'],
                 ]
             );
@@ -167,7 +166,6 @@ class CourseSeederBatch11 extends Seeder
                 ],
                 'quiz' => [
                     'title' => 'Supply Chain Attack Awareness Quiz',
-                    'passing_score' => 80,
                     'max_attempts' => 3,
                     'questions' => [
                         [
@@ -318,7 +316,6 @@ class CourseSeederBatch11 extends Seeder
                 ],
                 'quiz' => [
                     'title' => 'Secure Software Development Basics Quiz',
-                    'passing_score' => 80,
                     'max_attempts' => 3,
                     'questions' => [
                         [
@@ -470,7 +467,6 @@ class CourseSeederBatch11 extends Seeder
                 ],
                 'quiz' => [
                     'title' => 'Business Email Compromise Prevention Quiz',
-                    'passing_score' => 80,
                     'max_attempts' => 3,
                     'questions' => [
                         [
@@ -617,7 +613,6 @@ class CourseSeederBatch11 extends Seeder
                 ],
                 'quiz' => [
                     'title' => 'IoT & Smart Device Security Quiz',
-                    'passing_score' => 80,
                     'max_attempts' => 3,
                     'questions' => [
                         [
@@ -768,7 +763,6 @@ class CourseSeederBatch11 extends Seeder
                 ],
                 'quiz' => [
                     'title' => 'Deepfake & AI-Powered Social Engineering Quiz',
-                    'passing_score' => 80,
                     'max_attempts' => 3,
                     'questions' => [
                         [
@@ -915,7 +909,6 @@ class CourseSeederBatch11 extends Seeder
                 ],
                 'quiz' => [
                     'title' => 'Regulatory Compliance Essentials Quiz',
-                    'passing_score' => 80,
                     'max_attempts' => 3,
                     'questions' => [
                         [
