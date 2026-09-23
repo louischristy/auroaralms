@@ -1,0 +1,583 @@
+From 71054b8dd3aa6c0745fa805e9346e9394df73acd Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 17 Sep 2026 08:01:09 +0000
+Subject: [PATCH] Add notification system with bell, reminders, and policy
+ alerts
+
+- Notifications table migration for in-app notification storage
+- TrainingDueReminder: email + DB at 7 days and 1 day before due
+- TrainingOverdue: weekly email + DB for past-due enrollments
+- PolicyPushed: email + DB when a policy is pushed to users
+- SendTrainingReminders artisan command, scheduled daily at 08:00
+- Queue worker scheduled every minute (stop-when-empty for shared hosting)
+- NotificationController: index, mark-as-read with redirect, mark-all-read
+- Notification bell in navbar header with unread count badge
+- Notifications page with type-specific icons and links
+- Wired PolicyController::push() to send PolicyPushed notifications
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UQ3RHa89QArK9VvsXBaQQs
+---
+ .../Commands/SendTrainingReminders.php        | 90 +++++++++++++++++++
+ .../Controllers/Client/PolicyController.php   | 20 ++++-
+ .../Controllers/NotificationController.php    | 39 ++++++++
+ app/Notifications/PolicyPushed.php            | 44 +++++++++
+ app/Notifications/TrainingDueReminder.php     | 60 +++++++++++++
+ app/Notifications/TrainingOverdue.php         | 50 +++++++++++
+ bootstrap/app.php                             |  5 ++
+ ...1_25_000002_create_notifications_table.php | 25 ++++++
+ resources/views/layouts/app.blade.php         | 15 ++++
+ resources/views/notifications/index.blade.php | 80 +++++++++++++++++
+ routes/web.php                                |  6 ++
+ 11 files changed, 432 insertions(+), 2 deletions(-)
+ create mode 100644 app/Console/Commands/SendTrainingReminders.php
+ create mode 100644 app/Http/Controllers/NotificationController.php
+ create mode 100644 app/Notifications/PolicyPushed.php
+ create mode 100644 app/Notifications/TrainingDueReminder.php
+ create mode 100644 app/Notifications/TrainingOverdue.php
+ create mode 100644 database/migrations/2024_01_25_000002_create_notifications_table.php
+ create mode 100644 resources/views/notifications/index.blade.php
+
+diff --git a/app/Console/Commands/SendTrainingReminders.php b/app/Console/Commands/SendTrainingReminders.php
+new file mode 100644
+index 0000000..f4e07ed
+--- /dev/null
++++ b/app/Console/Commands/SendTrainingReminders.php
+@@ -0,0 +1,90 @@
++<?php
++
++namespace App\Console\Commands;
++
++use App\Models\CourseEnrollment;
++use App\Notifications\TrainingDueReminder;
++use App\Notifications\TrainingOverdue;
++use Illuminate\Console\Command;
++use Illuminate\Support\Facades\DB;
++
++class SendTrainingReminders extends Command
++{
++    protected $signature = 'training:send-reminders';
++    protected $description = 'Send due-date reminders and overdue alerts for training courses';
++
++    public function handle(): int
++    {
++        $this->sendDueReminders();
++        $this->sendOverdueAlerts();
++
++        return Command::SUCCESS;
++    }
++
++    /**
++     * Send reminders for training due in 7 days and 1 day.
++     */
++    private function sendDueReminders(): void
++    {
++        $reminderDays = [7, 1];
++
++        foreach ($reminderDays as $days) {
++            $targetDate = now()->addDays($days)->toDateString();
++
++            $enrollments = CourseEnrollment::with(['user', 'course'])
++                ->whereDate('due_date', $targetDate)
++                ->whereNotIn('status', ['completed'])
++                ->get();
++
++            $count = 0;
++            foreach ($enrollments as $enrollment) {
++                if (! $enrollment->user) continue;
++
++                // Avoid duplicate reminders: check if we already sent one today
++                $alreadySent = DB::table('notifications')
++                    ->where('notifiable_id', $enrollment->user->id)
++                    ->where('notifiable_type', get_class($enrollment->user))
++                    ->where('type', TrainingDueReminder::class)
++                    ->whereDate('created_at', now()->toDateString())
++                    ->exists();
++
++                if (! $alreadySent) {
++                    $enrollment->user->notify(new TrainingDueReminder($enrollment, $days));
++                    $count++;
++                }
++            }
++
++            if ($count > 0) {
++                $this->info("Sent {$count} reminder(s) for training due in {$days} day(s).");
++            }
++        }
++    }
++
++    /**
++     * Send weekly overdue alerts (every Monday) for past-due enrollments.
++     */
++    private function sendOverdueAlerts(): void
++    {
++        // Only send overdue alerts once per week (Monday)
++        if (now()->dayOfWeek !== 1) {
++            return;
++        }
++
++        $enrollments = CourseEnrollment::with(['user', 'course'])
++            ->where('due_date', '<', now())
++            ->whereNotIn('status', ['completed'])
++            ->get();
++
++        $count = 0;
++        foreach ($enrollments as $enrollment) {
++            if (! $enrollment->user) continue;
++
++            $enrollment->user->notify(new TrainingOverdue($enrollment));
++            $count++;
++        }
++
++        if ($count > 0) {
++            $this->info("Sent {$count} overdue training alert(s).");
++        }
++    }
++}
+diff --git a/app/Http/Controllers/Client/PolicyController.php b/app/Http/Controllers/Client/PolicyController.php
+index f0b4502..f39b3ff 100644
+--- a/app/Http/Controllers/Client/PolicyController.php
++++ b/app/Http/Controllers/Client/PolicyController.php
+@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Client;
+ use App\Http\Controllers\Controller;
+ use App\Models\Policy;
+ use App\Models\Tenant;
++use App\Models\User;
++use App\Notifications\PolicyPushed;
+ use Illuminate\Http\Request;
+ use Illuminate\Support\Facades\Auth;
+ 
+@@ -168,8 +170,22 @@ class PolicyController extends Controller
+             'published_at' => now(),
+         ]);
+ 
+-        // TODO: Create policy assignment records and send notifications
++        // Send notifications to affected users
++        $tenantId = $policy->tenant_id;
++        if ($request->boolean('push_to_all')) {
++            $users = User::where('tenant_id', $tenantId)->get();
++        } elseif ($request->filled('user_ids')) {
++            $users = User::whereIn('id', $request->user_ids)
++                ->where('tenant_id', $tenantId)
++                ->get();
++        } else {
++            $users = User::where('tenant_id', $tenantId)->get();
++        }
++
++        foreach ($users as $user) {
++            $user->notify(new PolicyPushed($policy));
++        }
+ 
+-        return back()->with('success', 'Policy pushed to users successfully.');
++        return back()->with('success', "Policy pushed to {$users->count()} user(s) successfully.");
+     }
+ }
+diff --git a/app/Http/Controllers/NotificationController.php b/app/Http/Controllers/NotificationController.php
+new file mode 100644
+index 0000000..19e977f
+--- /dev/null
++++ b/app/Http/Controllers/NotificationController.php
+@@ -0,0 +1,39 @@
++<?php
++
++namespace App\Http\Controllers;
++
++use Illuminate\Http\Request;
++
++class NotificationController extends Controller
++{
++    public function index(Request $request)
++    {
++        $notifications = $request->user()
++            ->notifications()
++            ->paginate(20);
++
++        return view('notifications.index', compact('notifications'));
++    }
++
++    public function markAsRead(Request $request, string $id)
++    {
++        $notification = $request->user()->notifications()->findOrFail($id);
++        $notification->markAsRead();
++
++        // Redirect to the relevant page based on notification type
++        $data = $notification->data;
++        $url = match ($data['type'] ?? '') {
++            'training_due_reminder', 'training_overdue' => url("/learn/courses/{$data['course_id']}"),
++            'policy_pushed' => url("/learn/policies/{$data['policy_id']}"),
++            default => route('notifications.index'),
++        };
++
++        return redirect($url);
++    }
++
++    public function markAllRead(Request $request)
++    {
++        $request->user()->unreadNotifications->markAsRead();
++        return back()->with('success', 'All notifications marked as read.');
++    }
++}
+diff --git a/app/Notifications/PolicyPushed.php b/app/Notifications/PolicyPushed.php
+new file mode 100644
+index 0000000..2f89272
+--- /dev/null
++++ b/app/Notifications/PolicyPushed.php
+@@ -0,0 +1,44 @@
++<?php
++
++namespace App\Notifications;
++
++use App\Models\Policy;
++use Illuminate\Bus\Queueable;
++use Illuminate\Contracts\Queue\ShouldQueue;
++use Illuminate\Notifications\Messages\MailMessage;
++use Illuminate\Notifications\Notification;
++
++class PolicyPushed extends Notification implements ShouldQueue
++{
++    use Queueable;
++
++    public function __construct(
++        public Policy $policy,
++    ) {}
++
++    public function via(object $notifiable): array
++    {
++        return ['mail', 'database'];
++    }
++
++    public function toMail(object $notifiable): MailMessage
++    {
++        return (new MailMessage)
++            ->subject('Action Required: New Policy — ' . $this->policy->title)
++            ->greeting('Hi ' . $notifiable->name . ',')
++            ->line('A new policy has been published that requires your acknowledgment:')
++            ->line('**' . $this->policy->title . '**')
++            ->line($this->policy->description ?? '')
++            ->action('Review & Acknowledge', url('/learn/policies/' . $this->policy->id))
++            ->line('Please review and acknowledge this policy at your earliest convenience.');
++    }
++
++    public function toArray(object $notifiable): array
++    {
++        return [
++            'type' => 'policy_pushed',
++            'policy_id' => $this->policy->id,
++            'policy_title' => $this->policy->title,
++        ];
++    }
++}
+diff --git a/app/Notifications/TrainingDueReminder.php b/app/Notifications/TrainingDueReminder.php
+new file mode 100644
+index 0000000..c50374f
+--- /dev/null
++++ b/app/Notifications/TrainingDueReminder.php
+@@ -0,0 +1,60 @@
++<?php
++
++namespace App\Notifications;
++
++use App\Models\CourseEnrollment;
++use Illuminate\Bus\Queueable;
++use Illuminate\Contracts\Queue\ShouldQueue;
++use Illuminate\Notifications\Messages\MailMessage;
++use Illuminate\Notifications\Notification;
++
++class TrainingDueReminder extends Notification implements ShouldQueue
++{
++    use Queueable;
++
++    public function __construct(
++        public CourseEnrollment $enrollment,
++        public int $daysRemaining,
++    ) {}
++
++    public function via(object $notifiable): array
++    {
++        return ['mail', 'database'];
++    }
++
++    public function toMail(object $notifiable): MailMessage
++    {
++        $course = $this->enrollment->course;
++        $due = $this->enrollment->due_date->format('M j, Y');
++
++        $message = (new MailMessage)
++            ->subject("Reminder: {$course->title} due in {$this->daysRemaining} day(s)")
++            ->greeting('Hi ' . $notifiable->name . ',')
++            ->line("This is a reminder that your training course is due soon:")
++            ->line("**{$course->title}**")
++            ->line("**Due date:** {$due}")
++            ->line("**Progress:** {$this->enrollment->progress_percent}%");
++
++        if ($this->enrollment->progress_percent === 0) {
++            $message->action('Start Course', url("/learn/courses/{$course->id}"));
++        } else {
++            $message->action('Continue Course', url("/learn/courses/{$course->id}"));
++        }
++
++        $message->line('Please complete this course before the due date.');
++
++        return $message;
++    }
++
++    public function toArray(object $notifiable): array
++    {
++        return [
++            'type' => 'training_due_reminder',
++            'course_id' => $this->enrollment->course_id,
++            'course_title' => $this->enrollment->course->title,
++            'due_date' => $this->enrollment->due_date->toDateString(),
++            'days_remaining' => $this->daysRemaining,
++            'progress' => $this->enrollment->progress_percent,
++        ];
++    }
++}
+diff --git a/app/Notifications/TrainingOverdue.php b/app/Notifications/TrainingOverdue.php
+new file mode 100644
+index 0000000..668aff9
+--- /dev/null
++++ b/app/Notifications/TrainingOverdue.php
+@@ -0,0 +1,50 @@
++<?php
++
++namespace App\Notifications;
++
++use App\Models\CourseEnrollment;
++use Illuminate\Bus\Queueable;
++use Illuminate\Contracts\Queue\ShouldQueue;
++use Illuminate\Notifications\Messages\MailMessage;
++use Illuminate\Notifications\Notification;
++
++class TrainingOverdue extends Notification implements ShouldQueue
++{
++    use Queueable;
++
++    public function __construct(
++        public CourseEnrollment $enrollment,
++    ) {}
++
++    public function via(object $notifiable): array
++    {
++        return ['mail', 'database'];
++    }
++
++    public function toMail(object $notifiable): MailMessage
++    {
++        $course = $this->enrollment->course;
++        $days = now()->diffInDays($this->enrollment->due_date);
++
++        return (new MailMessage)
++            ->subject("Overdue: {$course->title}")
++            ->greeting('Hi ' . $notifiable->name . ',')
++            ->line("Your training course is **{$days} day(s) overdue**:")
++            ->line("**{$course->title}**")
++            ->line("**Was due:** {$this->enrollment->due_date->format('M j, Y')}")
++            ->line("**Progress:** {$this->enrollment->progress_percent}%")
++            ->action('Complete Now', url("/learn/courses/{$course->id}"))
++            ->line('Please complete this course as soon as possible.');
++    }
++
++    public function toArray(object $notifiable): array
++    {
++        return [
++            'type' => 'training_overdue',
++            'course_id' => $this->enrollment->course_id,
++            'course_title' => $this->enrollment->course->title,
++            'due_date' => $this->enrollment->due_date->toDateString(),
++            'days_overdue' => now()->diffInDays($this->enrollment->due_date),
++        ];
++    }
++}
+diff --git a/bootstrap/app.php b/bootstrap/app.php
+index 32c4f17..32ce7fd 100644
+--- a/bootstrap/app.php
++++ b/bootstrap/app.php
+@@ -1,5 +1,6 @@
+ <?php
+ 
++use Illuminate\Console\Scheduling\Schedule;
+ use Illuminate\Foundation\Application;
+ use Illuminate\Foundation\Configuration\Exceptions;
+ use Illuminate\Foundation\Configuration\Middleware;
+@@ -8,6 +9,10 @@ return Application::configure(basePath: dirname(__DIR__))
+     ->withRouting(
+         web: __DIR__ . '/../routes/web.php',
+     )
++    ->withSchedule(function (Schedule $schedule) {
++        $schedule->command('training:send-reminders')->dailyAt('08:00');
++        $schedule->command('queue:work --stop-when-empty --max-time=55')->everyMinute()->withoutOverlapping();
++    })
+     ->withMiddleware(function (Middleware $middleware) {
+         $middleware->web(append: [
+             \App\Http\Middleware\InjectBranding::class,
+diff --git a/database/migrations/2024_01_25_000002_create_notifications_table.php b/database/migrations/2024_01_25_000002_create_notifications_table.php
+new file mode 100644
+index 0000000..52e3b00
+--- /dev/null
++++ b/database/migrations/2024_01_25_000002_create_notifications_table.php
+@@ -0,0 +1,25 @@
++<?php
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\Schema;
++
++return new class extends Migration
++{
++    public function up(): void
++    {
++        Schema::create('notifications', function (Blueprint $table) {
++            $table->uuid('id')->primary();
++            $table->string('type');
++            $table->morphs('notifiable');
++            $table->text('data');
++            $table->timestamp('read_at')->nullable();
++            $table->timestamps();
++        });
++    }
++
++    public function down(): void
++    {
++        Schema::dropIfExists('notifications');
++    }
++};
+diff --git a/resources/views/layouts/app.blade.php b/resources/views/layouts/app.blade.php
+index a0d8d18..a6ea6af 100644
+--- a/resources/views/layouts/app.blade.php
++++ b/resources/views/layouts/app.blade.php
+@@ -54,6 +54,21 @@
+ 
+                 <div class="flex-1"></div>
+ 
++                {{-- Notification bell --}}
++                @auth
++                @php $unreadCount = Auth::user()->unreadNotifications()->count(); @endphp
++                <a href="{{ route('notifications.index') }}" class="relative p-2 text-gray-500 hover:text-gray-700 mr-2" title="Notifications">
++                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
++                    </svg>
++                    @if($unreadCount > 0)
++                        <span class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
++                            {{ $unreadCount > 9 ? '9+' : $unreadCount }}
++                        </span>
++                    @endif
++                </a>
++                @endauth
++
+                 {{-- User menu --}}
+                 <div x-data="{ open: false }" class="relative">
+                     <button @click="open = !open" class="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900">
+diff --git a/resources/views/notifications/index.blade.php b/resources/views/notifications/index.blade.php
+new file mode 100644
+index 0000000..ca96f81
+--- /dev/null
++++ b/resources/views/notifications/index.blade.php
+@@ -0,0 +1,80 @@
++@extends('layouts.app')
++@section('title', 'Notifications — ' . ($branding['platform_name'] ?? 'Auroara LMS'))
++
++@section('content')
++<div class="max-w-3xl mx-auto space-y-6">
++    <div class="flex items-center justify-between">
++        <h1 class="text-2xl font-bold text-gray-900">Notifications</h1>
++        @if($notifications->where('read_at', null)->count() > 0)
++            <form method="POST" action="{{ route('notifications.mark-all-read') }}">
++                @csrf
++                <button type="submit" class="text-sm text-primary hover:text-primary/80">
++                    Mark all as read
++                </button>
++            </form>
++        @endif
++    </div>
++
++    <div class="card divide-y divide-gray-100">
++        @forelse($notifications as $notification)
++            @php $data = $notification->data; @endphp
++            <a href="{{ route('notifications.read', $notification->id) }}"
++               class="flex items-start gap-4 px-6 py-4 hover:bg-gray-50 transition {{ $notification->read_at ? '' : 'bg-blue-50/50' }}">
++                <div class="flex-shrink-0 mt-1">
++                    @if(($data['type'] ?? '') === 'training_due_reminder')
++                        <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
++                            <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
++                            </svg>
++                        </div>
++                    @elseif(($data['type'] ?? '') === 'training_overdue')
++                        <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
++                            <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
++                            </svg>
++                        </div>
++                    @elseif(($data['type'] ?? '') === 'policy_pushed')
++                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
++                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
++                            </svg>
++                        </div>
++                    @else
++                        <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
++                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
++                            </svg>
++                        </div>
++                    @endif
++                </div>
++                <div class="flex-1 min-w-0">
++                    <p class="text-sm {{ $notification->read_at ? 'text-gray-600' : 'text-gray-900 font-medium' }}">
++                        @if(($data['type'] ?? '') === 'training_due_reminder')
++                            <strong>{{ $data['course_title'] }}</strong> is due in {{ $data['days_remaining'] }} day(s)
++                        @elseif(($data['type'] ?? '') === 'training_overdue')
++                            <strong>{{ $data['course_title'] }}</strong> is overdue (was due {{ $data['due_date'] }})
++                        @elseif(($data['type'] ?? '') === 'policy_pushed')
++                            New policy requires your acknowledgment: <strong>{{ $data['policy_title'] }}</strong>
++                        @else
++                            You have a new notification
++                        @endif
++                    </p>
++                    <p class="text-xs text-gray-400 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
++                </div>
++                @if(! $notification->read_at)
++                    <span class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2"></span>
++                @endif
++            </a>
++        @empty
++            <div class="px-6 py-12 text-center text-gray-500">
++                <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
++                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
++                </svg>
++                <p>No notifications yet.</p>
++            </div>
++        @endforelse
++    </div>
++
++    <div class="flex justify-center">{{ $notifications->links() }}</div>
++</div>
++@endsection
+diff --git a/routes/web.php b/routes/web.php
+index 1118cb9..d6ccd35 100644
+--- a/routes/web.php
++++ b/routes/web.php
+@@ -2,6 +2,7 @@
+ 
+ use App\Http\Controllers\Api\ScormApiController;
+ use App\Http\Controllers\Auth\LoginController;
++use App\Http\Controllers\NotificationController;
+ use App\Http\Controllers\Auth\ForgotPasswordController;
+ use App\Http\Controllers\Auth\ResetPasswordController;
+ use App\Http\Controllers\DashboardController;
+@@ -44,6 +45,11 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding'])->group(function
+     Route::post('logout', [LoginController::class, 'logout'])->name('logout');
+     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+ 
++    // Notifications
++    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
++    Route::get('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
++    Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
++
+     // Profile
+     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
+     Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
+-- 
+2.43.0
+
