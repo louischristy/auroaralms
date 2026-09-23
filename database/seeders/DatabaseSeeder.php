@@ -22,7 +22,9 @@ class DatabaseSeeder extends Seeder
             CourseSeederBatch7::class,
             CourseSeederBatch8::class,
             CourseSeederBatch9::class,
+            CourseSeederBatch10::class,
             PhishingTemplateSeeder::class,
+            PhishingTemplateSeederBatch2::class,
             BadgeSeeder::class,
             VideoLessonSeeder::class,
         ]);
