@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -13,12 +14,17 @@ class AuditLogController extends Controller
     {
         $user = Auth::user();
 
-        $query = AuditLog::with('user')
+        $query = AuditLog::with(['user', 'tenant'])
             ->orderByDesc('created_at');
 
         // Client admins see only their tenant's logs
         if (!$user->isPlatformAdmin()) {
             $query->where('tenant_id', $user->tenant_id);
+        }
+
+        // Tenant filter (platform admin only)
+        if ($user->isPlatformAdmin() && $request->filled('tenant_id')) {
+            $query->where('tenant_id', $request->tenant_id);
         }
 
         // Filters
@@ -57,12 +63,18 @@ class AuditLogController extends Controller
         }
         $actions = $actionsQuery->pluck('action');
 
+        // Tenants list for platform admin filter
+        $tenants = $user->isPlatformAdmin()
+            ? Tenant::orderBy('name')->select('id', 'name')->get()
+            : collect();
+
         $logs = $query->paginate(25)->withQueryString();
 
         return view('platform.audit-logs.index', [
             'logs' => $logs,
             'actions' => $actions,
-            'filters' => $request->only(['action', 'user_id', 'date_from', 'date_to', 'search']),
+            'tenants' => $tenants,
+            'filters' => $request->only(['action', 'user_id', 'date_from', 'date_to', 'search', 'tenant_id']),
         ]);
     }
 

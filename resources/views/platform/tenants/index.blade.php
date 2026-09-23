@@ -18,7 +18,7 @@
                     <tr>
                         <th class="text-left px-4 py-3 font-medium text-gray-600">Organization</th>
                         <th class="text-left px-4 py-3 font-medium text-gray-600">Slug</th>
-                        <th class="text-center px-4 py-3 font-medium text-gray-600">Users</th>
+                        <th class="text-center px-4 py-3 font-medium text-gray-600">Users (Used / Limit)</th>
                         <th class="text-center px-4 py-3 font-medium text-gray-600">Plan</th>
                         <th class="text-center px-4 py-3 font-medium text-gray-600">Status</th>
                         <th class="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
@@ -29,7 +29,16 @@
                         <tr class="hover:bg-gray-50">
                             <td class="px-4 py-3 font-medium text-gray-900">{{ $tenant->name }}</td>
                             <td class="px-4 py-3 text-gray-500">{{ $tenant->slug }}</td>
-                            <td class="px-4 py-3 text-center">{{ $tenant->users_count }}</td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="font-medium {{ $tenant->max_users && $tenant->users_count >= $tenant->max_users ? 'text-red-600' : 'text-gray-900' }}">{{ $tenant->users_count }}</span>
+                                <span class="text-gray-400">/</span>
+                                <span class="text-gray-500">{{ $tenant->max_users ?? '∞' }}</span>
+                                @if($tenant->max_users)
+                                    <div class="w-16 mx-auto mt-1 bg-gray-200 rounded-full h-1.5">
+                                        <div class="h-1.5 rounded-full {{ $tenant->users_count >= $tenant->max_users ? 'bg-red-500' : ($tenant->users_count >= $tenant->max_users * 0.8 ? 'bg-yellow-500' : 'bg-green-500') }}" style="width: {{ min(round(($tenant->users_count / $tenant->max_users) * 100), 100) }}%"></div>
+                                    </div>
+                                @endif
+                            </td>
                             <td class="px-4 py-3 text-center">
                                 <span class="badge-info">{{ ucfirst($tenant->subscription_plan) }}</span>
                             </td>

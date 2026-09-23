@@ -12,11 +12,11 @@ class PlatformSettingController extends Controller
     public function edit()
     {
         $settings = [
-            'brand' => PlatformSetting::getGroup('brand'),
-            'general' => PlatformSetting::getGroup('general'),
-            'email' => PlatformSetting::getGroup('email'),
-            'smtp' => PlatformSetting::getGroup('smtp'),
-            'security' => PlatformSetting::getGroup('security'),
+            'brand' => PlatformSetting::getGroup('brand') ?: [],
+            'general' => PlatformSetting::getGroup('general') ?: [],
+            'email' => PlatformSetting::getGroup('email') ?: [],
+            'smtp' => PlatformSetting::getGroup('smtp') ?: [],
+            'security' => PlatformSetting::getGroup('security') ?: [],
         ];
 
         return view('platform.settings.edit', compact('settings'));

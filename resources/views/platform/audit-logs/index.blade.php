@@ -13,6 +13,17 @@
             <label class="block text-xs font-medium text-gray-500 mb-1">Search</label>
             <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="User, action, IP..." class="input w-full">
         </div>
+        @if(auth()->user()->isPlatformAdmin() && $tenants->count())
+        <div class="w-full sm:w-48">
+            <label class="block text-xs font-medium text-gray-500 mb-1">Tenant</label>
+            <select name="tenant_id" class="input w-full">
+                <option value="">All Tenants</option>
+                @foreach($tenants as $tenant)
+                    <option value="{{ $tenant->id }}" {{ ($filters['tenant_id'] ?? '') == $tenant->id ? 'selected' : '' }}>{{ $tenant->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        @endif
         <div class="w-full sm:w-48">
             <label class="block text-xs font-medium text-gray-500 mb-1">Action</label>
             <select name="action" class="input w-full">
@@ -43,6 +54,9 @@
                     <tr>
                         <th class="text-left px-4 py-3 font-medium text-gray-600">Time</th>
                         <th class="text-left px-4 py-3 font-medium text-gray-600">User</th>
+                        @if(auth()->user()->isPlatformAdmin())
+                        <th class="text-left px-4 py-3 font-medium text-gray-600">Tenant</th>
+                        @endif
                         <th class="text-left px-4 py-3 font-medium text-gray-600">Action</th>
                         <th class="text-left px-4 py-3 font-medium text-gray-600">Subject</th>
                         <th class="text-left px-4 py-3 font-medium text-gray-600">IP Address</th>
@@ -63,6 +77,11 @@
                                 <span class="text-gray-400 italic">System</span>
                             @endif
                         </td>
+                        @if(auth()->user()->isPlatformAdmin())
+                        <td class="px-4 py-3 text-gray-600">
+                            {{ $log->tenant?->name ?? '—' }}
+                        </td>
+                        @endif
                         <td class="px-4 py-3">
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
                                 @if(str_contains($log->action, 'created') || str_contains($log->action, 'login'))
@@ -94,7 +113,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-400">No audit logs found.</td>
+                        <td colspan="{{ auth()->user()->isPlatformAdmin() ? 7 : 6 }}" class="px-4 py-8 text-center text-gray-400">No audit logs found.</td>
                     </tr>
                     @endforelse
                 </tbody>

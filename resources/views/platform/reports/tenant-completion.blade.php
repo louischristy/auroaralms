@@ -56,7 +56,9 @@
             <tbody class="divide-y divide-gray-200">
                 @forelse($data as $row)
                 <tr>
-                    <td class="px-6 py-4 font-medium text-gray-900">{{ $row['tenant'] }}</td>
+                    <td class="px-6 py-4 font-medium text-gray-900">
+                        <a href="{{ route('platform.tenants.show', $row['tenant_id']) }}" class="text-blue-600 hover:text-blue-800 hover:underline">{{ $row['tenant'] }}</a>
+                    </td>
                     <td class="px-6 py-4 text-center text-gray-600">{{ $row['users'] }}</td>
                     <td class="px-6 py-4 text-center text-gray-600">{{ $row['enrolled'] }}</td>
                     <td class="px-6 py-4 text-center text-green-600 font-medium">{{ $row['completed'] }}</td>

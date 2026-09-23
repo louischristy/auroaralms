@@ -52,6 +52,7 @@ class ReportController extends Controller
             return $tenants->map(function ($tenant) use ($enrollmentStats) {
                 $stats = $enrollmentStats->get($tenant->id);
                 return [
+                    'tenant_id' => $tenant->id,
                     'tenant' => $tenant->name,
                     'users' => $tenant->users_count,
                     'enrolled' => $stats?->enrolled ?? 0,
