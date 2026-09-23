@@ -356,7 +356,7 @@ HTML,
         foreach ($templates as $template) {
             PhishingTemplate::updateOrCreate(
                 ['name' => $template['name']],
-                $template
+                array_merge($template, ["is_system" => true])
             );
         }
     }
