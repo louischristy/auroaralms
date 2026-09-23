@@ -142,6 +142,7 @@
             </svg>
             Audit Logs
         </a>
+        @role('client-admin')
         <a href="{{ route('manage.settings.email') }}"
            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('manage.settings.*') ? 'bg-primary/10 text-primary' : 'text-gray-600 hover:bg-gray-50' }}">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,6 +157,7 @@
             </svg>
             Certificate Design
         </a>
+        @endrole
     @endanyrole
 
     {{-- Learning --}}
