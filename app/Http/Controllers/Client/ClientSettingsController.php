@@ -14,7 +14,11 @@ class ClientSettingsController extends Controller
      */
     public function emailSettings()
     {
-        $tenant = app('current_tenant');
+        $tenant = auth()->user()->tenant;
+        if (!$tenant) {
+            return redirect()->route('platform.settings.edit')
+                ->with('info', 'Platform-level email settings are configured here. Tenant email overrides are managed from a tenant admin account.');
+        }
         $settings = $tenant->settings ?? [];
         $tenantSmtp = $settings['smtp'] ?? [];
 
@@ -35,6 +39,10 @@ class ClientSettingsController extends Controller
      */
     public function updateEmailSettings(Request $request)
     {
+        $tenant = auth()->user()->tenant;
+        if (!$tenant) {
+            abort(403, 'No tenant context available.');
+        }
         $request->validate([
             'smtp_host' => ['nullable', 'string', 'max:255'],
             'smtp_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
@@ -44,8 +52,6 @@ class ClientSettingsController extends Controller
             'from_name' => ['nullable', 'string', 'max:255'],
             'from_address' => ['nullable', 'email', 'max:255'],
         ]);
-
-        $tenant = app('current_tenant');
         $settings = $tenant->settings ?? [];
 
         $smtp = [];
@@ -71,7 +77,10 @@ class ClientSettingsController extends Controller
      */
     public function resetEmailSettings()
     {
-        $tenant = app('current_tenant');
+        $tenant = auth()->user()->tenant;
+        if (!$tenant) {
+            abort(403, 'No tenant context available.');
+        }
         $settings = $tenant->settings ?? [];
         unset($settings['smtp']);
         $tenant->settings = $settings;
@@ -90,7 +99,10 @@ class ClientSettingsController extends Controller
         $request->validate(['test_email' => ['required', 'email']]);
 
         try {
-            $tenant = app('current_tenant');
+            $tenant = auth()->user()->tenant;
+            if (!$tenant) {
+                return back()->with('error', 'No tenant context available.');
+            }
             $settings = $tenant->settings['smtp'] ?? [];
 
             // Temporarily override mail config for this tenant
