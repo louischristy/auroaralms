@@ -211,7 +211,7 @@ HTML,
             ],
             [
                 'name' => 'Company Survey - Employee Satisfaction',
-                'scenario_type' => 'data_theft',
+                'scenario_type' => 'credential_harvest',
                 'subject' => 'Action Required: Complete Your Annual Employee Satisfaction Survey',
                 'sender_name' => 'HR Department',
                 'sender_email' => 'hr-surveys@company-feedback.org',

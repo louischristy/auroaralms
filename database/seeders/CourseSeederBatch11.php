@@ -76,7 +76,6 @@ class CourseSeederBatch11 extends Seeder
                 'is_mandatory' => true,
                 'is_active' => true,
                 'sort_order' => 34,
-                'lessons_count' => 3,
                 'lessons' => [
                     [
                         'title' => 'Understanding Supply Chain Attacks',
@@ -231,7 +230,6 @@ class CourseSeederBatch11 extends Seeder
                 'is_mandatory' => false,
                 'is_active' => true,
                 'sort_order' => 35,
-                'lessons_count' => 3,
                 'lessons' => [
                     [
                         'title' => 'Secure Development Lifecycle Fundamentals',
@@ -383,7 +381,6 @@ class CourseSeederBatch11 extends Seeder
                 'is_mandatory' => true,
                 'is_active' => true,
                 'sort_order' => 36,
-                'lessons_count' => 3,
                 'lessons' => [
                     [
                         'title' => 'How Business Email Compromise Works',
@@ -536,7 +533,6 @@ class CourseSeederBatch11 extends Seeder
                 'is_mandatory' => false,
                 'is_active' => true,
                 'sort_order' => 37,
-                'lessons_count' => 3,
                 'lessons' => [
                     [
                         'title' => 'Introduction to IoT Security Risks',
@@ -684,7 +680,6 @@ class CourseSeederBatch11 extends Seeder
                 'is_mandatory' => true,
                 'is_active' => true,
                 'sort_order' => 38,
-                'lessons_count' => 3,
                 'lessons' => [
                     [
                         'title' => 'The Rise of AI-Powered Deception',
@@ -836,7 +831,6 @@ class CourseSeederBatch11 extends Seeder
                 'is_mandatory' => false,
                 'is_active' => true,
                 'sort_order' => 39,
-                'lessons_count' => 3,
                 'lessons' => [
                     [
                         'title' => 'Understanding Key Regulatory Frameworks',
