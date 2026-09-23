@@ -53,7 +53,7 @@ class CourseSeederBatch11 extends Seeder
 
                 foreach ($answers as $answerData) {
                     QuizAnswer::updateOrCreate(
-                        ['question_id' => $question->id, 'answer_text' => $answerData['answer']],
+                        ['question_id' => $question->id, 'answer_text' => $answerData['answer_text']],
                         array_merge($answerData, ['question_id' => $question->id])
                     );
                 }
