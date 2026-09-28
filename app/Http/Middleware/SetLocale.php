@@ -24,7 +24,7 @@ class SetLocale
 
         // Explicit choice (user preference column if present, then session) wins over tenant default.
         $candidates = [
-            $user->locale ?? null,
+            $user?->locale ?? null,
             $request->hasSession() ? $request->session()->get('locale') : null,
             $user?->tenant?->locale ?? (app()->bound('current_tenant') ? app('current_tenant')?->locale : null),
             $request->getPreferredLanguage($supported),
