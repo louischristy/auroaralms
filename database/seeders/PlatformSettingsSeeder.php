@@ -34,13 +34,6 @@ class PlatformSettingsSeeder extends Seeder
             ['group' => 'email', 'key' => 'welcome_email_enabled', 'value' => '1', 'type' => 'bool'],
             ['group' => 'email', 'key' => 'course_reminder_days', 'value' => '3', 'type' => 'int'],
 
-            // SMTP settings
-            ['group' => 'smtp', 'key' => 'host', 'value' => '', 'type' => 'string'],
-            ['group' => 'smtp', 'key' => 'port', 'value' => '587', 'type' => 'string'],
-            ['group' => 'smtp', 'key' => 'username', 'value' => '', 'type' => 'string'],
-            ['group' => 'smtp', 'key' => 'password', 'value' => '', 'type' => 'string'],
-            ['group' => 'smtp', 'key' => 'encryption', 'value' => 'tls', 'type' => 'string'],
-
             // Security settings
             ['group' => 'security', 'key' => 'password_min_length', 'value' => '8', 'type' => 'int'],
             ['group' => 'security', 'key' => 'session_lifetime_minutes', 'value' => '120', 'type' => 'int'],
@@ -49,7 +42,7 @@ class PlatformSettingsSeeder extends Seeder
         ];
 
         foreach ($settings as $setting) {
-            PlatformSetting::updateOrCreate(
+            PlatformSetting::firstOrCreate(
                 ['group' => $setting['group'], 'key' => $setting['key']],
                 ['value' => $setting['value'], 'type' => $setting['type']]
             );

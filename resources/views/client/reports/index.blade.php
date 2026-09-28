@@ -35,6 +35,36 @@
             </div>
             <p class="text-sm text-gray-500">Users with past-due courses sorted by urgency.</p>
         </a>
+
+        <a href="{{ route('manage.reports.learning-path-progress') }}" class="card p-6 hover:shadow-md transition-shadow group">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                </div>
+                <h2 class="text-lg font-semibold text-gray-900 group-hover:text-primary">Learning Path Progress</h2>
+            </div>
+            <p class="text-sm text-gray-500">Completion rates and average time to complete per path.</p>
+        </a>
+
+        <a href="{{ route('manage.reports.survey-analytics') }}" class="card p-6 hover:shadow-md transition-shadow group">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-lg bg-yellow-50 text-yellow-600 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                </div>
+                <h2 class="text-lg font-semibold text-gray-900 group-hover:text-primary">Survey Analytics</h2>
+            </div>
+            <p class="text-sm text-gray-500">Response rates, ratings and question breakdowns.</p>
+        </a>
+
+        <a href="{{ route('manage.reports.gamification') }}" class="card p-6 hover:shadow-md transition-shadow group">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                </div>
+                <h2 class="text-lg font-semibold text-gray-900 group-hover:text-primary">Gamification</h2>
+            </div>
+            <p class="text-sm text-gray-500">Points, top performers, badges and streaks.</p>
+        </a>
     </div>
 </div>
 @endsection

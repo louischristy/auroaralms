@@ -108,12 +108,9 @@ class ReportController extends Controller
             ->withCount('users')
             ->get();
 
-        $tenantId = app()->bound('current_tenant_id') ? app('current_tenant_id') : null;
-
         $deptEnrollments = DB::table('course_enrollments')
             ->join('users', 'users.id', '=', 'course_enrollments.user_id')
             ->whereNotNull('users.department_id')
-            ->when($tenantId, fn($q) => $q->where('course_enrollments.tenant_id', $tenantId))
             ->whereBetween('course_enrollments.created_at', [$from, "$to 23:59:59"])
             ->select(
                 'users.department_id',
@@ -178,6 +175,205 @@ class ReportController extends Controller
         $overdue = $baseQuery->paginate(30);
 
         return view('client.reports.overdue-training', compact('overdue'));
+    }
+
+    // ── Advanced reports ──
+
+    public function learningPathProgress()
+    {
+        $rows = $this->learningPathData();
+
+        return view('client.reports.learning-path-progress', ['rows' => $rows]);
+    }
+
+    public function surveyAnalytics()
+    {
+        $surveys = $this->surveyData();
+
+        return view('client.reports.survey-analytics', ['surveys' => $surveys]);
+    }
+
+    public function gamificationReport()
+    {
+        return view('client.reports.gamification-report', $this->gamificationData());
+    }
+
+    public function exportReport(string $type)
+    {
+        switch ($type) {
+            case 'learning-paths':
+                $rows = $this->learningPathData()->map(fn($r) => [
+                    $r['title'], $r['enrolled'], $r['completed'], $r['rate'], $r['avg_days'] ?? '',
+                ])->all();
+                return $this->exportCsv('learning-path-progress',
+                    ['Path', 'Enrolled', 'Completed', 'Completion %', 'Avg Days to Complete'], $rows);
+
+            case 'surveys':
+                $rows = $this->surveyData()->map(fn($s) => [
+                    $s['title'], $s['responses'], $s['invited'], $s['response_rate'], $s['avg_rating'] ?? '',
+                ])->all();
+                return $this->exportCsv('survey-analytics',
+                    ['Survey', 'Responses', 'Eligible Users', 'Response Rate %', 'Avg Rating'], $rows);
+
+            case 'gamification':
+                $rows = $this->gamificationData()['topUsers']->map(fn($u) => [
+                    $u->name, $u->email, $u->period_points, $u->total_points,
+                ])->all();
+                return $this->exportCsv('gamification',
+                    ['Name', 'Email', 'Points (all awards)', 'Total Points'], $rows);
+
+            case 'user-progress':
+                return redirect()->route('manage.reports.user-progress', ['export' => 'csv']);
+            case 'department-breakdown':
+                return redirect()->route('manage.reports.department-breakdown', ['export' => 'csv']);
+            case 'overdue-training':
+                return redirect()->route('manage.reports.overdue-training', ['export' => 'csv']);
+        }
+
+        abort(404);
+    }
+
+    private function tenantId(): ?int
+    {
+        return app()->bound('current_tenant_id') ? app('current_tenant_id') : null;
+    }
+
+    private function learningPathData()
+    {
+        // LearningPath uses BelongsToTenant, so it is already tenant scoped.
+        $paths = \App\Models\LearningPath::orderBy('title')->get(['id', 'title']);
+
+        $stats = DB::table('learning_path_enrollments')
+            ->when($this->tenantId(), fn($q, $t) => $q->where('tenant_id', $t))
+            ->whereIn('learning_path_id', $paths->pluck('id'))
+            ->select(
+                'learning_path_id',
+                DB::raw('COUNT(*) as enrolled'),
+                DB::raw("SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed")
+            )
+            ->groupBy('learning_path_id')->get()->keyBy('learning_path_id');
+
+        // Average days computed in PHP for database portability.
+        $durations = DB::table('learning_path_enrollments')
+            ->when($this->tenantId(), fn($q, $t) => $q->where('tenant_id', $t))
+            ->where('status', 'completed')
+            ->whereNotNull('completed_at')
+            ->get(['learning_path_id', 'started_at', 'created_at', 'completed_at'])
+            ->groupBy('learning_path_id')
+            ->map(fn($g) => round($g->avg(fn($e) => max(0,
+                \Illuminate\Support\Carbon::parse($e->started_at ?? $e->created_at)
+                    ->diffInSeconds(\Illuminate\Support\Carbon::parse($e->completed_at), true) / 86400
+            )), 1));
+
+        return $paths->map(function ($p) use ($stats, $durations) {
+            $s = $stats->get($p->id);
+            $enrolled = (int) ($s->enrolled ?? 0);
+            $completed = (int) ($s->completed ?? 0);
+            return [
+                'title' => $p->title,
+                'enrolled' => $enrolled,
+                'completed' => $completed,
+                'rate' => $enrolled > 0 ? round($completed / $enrolled * 100, 1) : 0,
+                'avg_days' => $durations->get($p->id),
+            ];
+        })->values();
+    }
+
+    private function surveyData()
+    {
+        $surveys = \App\Models\Survey::with('questions')->orderBy('title')->get();
+        $eligible = User::where('is_active', true)->count();
+
+        return $surveys->map(function ($survey) use ($eligible) {
+            $responses = \App\Models\SurveyResponse::where('survey_id', $survey->id)->get();
+            $count = $responses->count();
+
+            $byQuestion = [];
+            foreach ($responses as $r) {
+                foreach ((array) $r->answers as $a) {
+                    if (isset($a['question_id'])) {
+                        $byQuestion[$a['question_id']][] = $a['value'] ?? null;
+                    }
+                }
+            }
+
+            $questions = $survey->questions->map(function ($q) use ($byQuestion) {
+                $vals = collect($byQuestion[$q->id] ?? [])->filter(fn($v) => $v !== null && $v !== '');
+                $numeric = in_array($q->type, ['rating', 'scale'], true);
+                return [
+                    'question' => $q->question,
+                    'type' => $q->type,
+                    'answers' => $vals->count(),
+                    'avg' => $numeric && $vals->count() ? round($vals->avg(), 2) : null,
+                    'distribution' => in_array($q->type, ['multiple_choice', 'yes_no', 'rating', 'scale'], true)
+                        ? $vals->map(fn($v) => is_array($v) ? implode(', ', $v) : (string) $v)->countBy()->sortKeys()->all()
+                        : [],
+                ];
+            });
+
+            $rated = $responses->pluck('overall_rating')->filter();
+            $trend = $responses->groupBy(fn($r) => \Illuminate\Support\Carbon::parse($r->submitted_at)->format('Y-m'))
+                ->map(fn($g) => ['count' => $g->count(), 'avg' => round($g->pluck('overall_rating')->filter()->avg() ?? 0, 2)])
+                ->sortKeys()->all();
+
+            return [
+                'title' => $survey->title,
+                'responses' => $count,
+                'invited' => $eligible,
+                'response_rate' => $eligible > 0 ? round($count / $eligible * 100, 1) : 0,
+                'avg_rating' => $rated->count() ? round($rated->avg(), 2) : null,
+                'questions' => $questions,
+                'trend' => $trend,
+            ];
+        });
+    }
+
+    private function gamificationData(): array
+    {
+        $tid = $this->tenantId();
+        $scope = fn($q) => $q->when($tid, fn($qq) => $qq->where('tenant_id', $tid));
+
+        $totalPoints = (int) $scope(DB::table('gamification_points'))->sum('points');
+        $activeUsers = User::where('is_active', true)->count();
+
+        $topUsers = User::select('id', 'name', 'email', 'total_points')
+            ->withSum('gamificationPoints as period_points', 'points')
+            ->orderByDesc('total_points')->limit(10)->get();
+
+        $byAction = $scope(DB::table('gamification_points'))
+            ->select('action', DB::raw('SUM(points) as points'), DB::raw('COUNT(*) as awards'))
+            ->groupBy('action')->orderByDesc('points')->get();
+
+        $bands = ['0-99' => [0, 99], '100-499' => [100, 499], '500-999' => [500, 999], '1000+' => [1000, PHP_INT_MAX]];
+        $distribution = [];
+        foreach ($bands as $label => [$lo, $hi]) {
+            $distribution[$label] = User::where('is_active', true)->whereBetween('total_points', [$lo, min($hi, 2147483647)])->count();
+        }
+
+        $badges = DB::table('badges')
+            ->leftJoin('user_badges', function ($j) use ($tid) {
+                $j->on('user_badges.badge_id', '=', 'badges.id');
+                if ($tid) {
+                    $j->where('user_badges.tenant_id', $tid);
+                }
+            })
+            ->select('badges.name', 'badges.icon', DB::raw('COUNT(user_badges.id) as earned'))
+            ->groupBy('badges.id', 'badges.name', 'badges.icon')
+            ->orderByDesc('earned')->get();
+
+        $streaks = $scope(DB::table('user_streaks'))
+            ->selectRaw('AVG(current_streak) as avg_current, MAX(longest_streak) as best, SUM(CASE WHEN current_streak > 0 THEN 1 ELSE 0 END) as active')
+            ->first();
+
+        return [
+            'totalPoints' => $totalPoints,
+            'avgPerUser' => $activeUsers ? round($totalPoints / $activeUsers, 1) : 0,
+            'topUsers' => $topUsers,
+            'byAction' => $byAction,
+            'distribution' => $distribution,
+            'badges' => $badges,
+            'streaks' => $streaks,
+        ];
     }
 
     private function exportCsv(string $name, array $headers, array $rows): StreamedResponse

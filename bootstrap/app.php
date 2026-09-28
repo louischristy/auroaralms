@@ -15,9 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
+            \App\Http\Middleware\ResolveSubdomain::class,
+            \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\InjectBranding::class,
             \App\Http\Middleware\SecurityHeaders::class,
-            \App\Http\Middleware\TenantMailConfig::class,
         ]);
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,

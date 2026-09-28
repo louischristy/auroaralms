@@ -130,3 +130,5 @@
         @apply font-semibold text-gray-900;
     }
 }
+
+[x-cloak] { display: none !important; }

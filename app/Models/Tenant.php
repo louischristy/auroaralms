@@ -16,6 +16,9 @@ class Tenant extends Model
         'name',
         'slug',
         'domain',
+        'subdomain',
+        'locale',
+        'timezone',
         'logo_path',
         'favicon_path',
         'primary_color',
@@ -26,7 +29,6 @@ class Tenant extends Model
         'max_users',
         'subscription_plan',
         'subscription_expires_at',
-        'selected_certificate_template_id',
     ];
 
     protected $casts = [
@@ -56,6 +58,11 @@ class Tenant extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(TenantSubscription::class);
     }
 
     public function departments(): HasMany

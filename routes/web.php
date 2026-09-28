@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\ScormApiController;
+use App\Http\Controllers\Platform\SubscriptionPlanController;
+use App\Http\Controllers\Platform\TenantSubscriptionController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SsoController;
 use App\Http\Controllers\Auth\TwoFactorController;
@@ -16,27 +18,37 @@ use App\Http\Controllers\Platform\CourseManagementController;
 use App\Http\Controllers\Platform\CourseCategoryController;
 use App\Http\Controllers\Platform\ReportController as PlatformReportController;
 use App\Http\Controllers\Platform\TenantSsoController;
-use App\Http\Controllers\Platform\CertificateTemplateController;
 use App\Http\Controllers\Client\ReportController as ClientReportController;
 use App\Http\Controllers\Client\UserController;
 use App\Http\Controllers\Client\DepartmentController;
 use App\Http\Controllers\Client\ClientCourseController;
 use App\Http\Controllers\Client\PhishingController;
 use App\Http\Controllers\Client\PolicyController;
-use App\Http\Controllers\Client\ClientSettingsController;
-use App\Http\Controllers\Client\CertificateSettingsController;
+use App\Http\Controllers\Client\AnnouncementController as ClientAnnouncementController;
+use App\Http\Controllers\Client\SurveyController as ClientSurveyController;
+use App\Http\Controllers\Client\VirtualClassroomController as ClientVirtualClassroomController;
+use App\Http\Controllers\Employee\AnnouncementController as EmployeeAnnouncementController;
+use App\Http\Controllers\Employee\SurveyController as EmployeeSurveyController;
+use App\Http\Controllers\Employee\VirtualClassroomController as EmployeeVirtualClassroomController;
 use App\Http\Controllers\Employee\CertificateController;
 use App\Http\Controllers\Employee\CourseController;
 use App\Http\Controllers\Employee\LeaderboardController;
+use App\Http\Controllers\Employee\LearningPathController as EmployeeLearningPathController;
+use App\Http\Controllers\Platform\LearningPathController as PlatformLearningPathController;
+use App\Http\Controllers\Client\ClientLearningPathController;
 use App\Http\Controllers\Employee\PolicyAcknowledgmentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SessionController;
+use App\Http\Controllers\Client\ClientSettingsController;
+use App\Http\Controllers\LocaleController;
 use Illuminate\Support\Facades\Route;
 
 // ── Public ──
 Route::get('/', function () {
     return redirect()->route('login');
 });
+
+Route::post('locale/{locale}', [LocaleController::class, 'update'])->name('locale.update');
 
 // ── Auth (Guest) ──
 Route::middleware('guest')->group(function () {
@@ -99,10 +111,20 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::put('tenants/{tenant}/sso/{sso}', [TenantSsoController::class, 'update'])->name('tenants.sso.update');
         Route::delete('tenants/{tenant}/sso/{sso}', [TenantSsoController::class, 'destroy'])->name('tenants.sso.destroy');
 
+        // Pricing & Commercial
+        Route::resource('subscription-plans', SubscriptionPlanController::class)->except('show')->parameters(['subscription-plans' => 'id']);
+        Route::post('subscription-plans/{id}/duplicate', [SubscriptionPlanController::class, 'duplicate'])->name('subscription-plans.duplicate');
+        Route::get('subscriptions', [TenantSubscriptionController::class, 'index'])->name('subscriptions.index');
+        Route::get('subscriptions/create', [TenantSubscriptionController::class, 'create'])->name('subscriptions.create');
+        Route::post('subscriptions', [TenantSubscriptionController::class, 'store'])->name('subscriptions.store');
+        Route::get('subscriptions/invoices/{invoiceId}', [TenantSubscriptionController::class, 'showInvoice'])->name('subscriptions.invoice');
+        Route::get('subscriptions/{id}/edit', [TenantSubscriptionController::class, 'edit'])->name('subscriptions.edit');
+        Route::put('subscriptions/{id}', [TenantSubscriptionController::class, 'update'])->name('subscriptions.update');
+        Route::post('subscriptions/{id}/invoice', [TenantSubscriptionController::class, 'generateInvoice'])->name('subscriptions.generate-invoice');
+
         // Platform Settings
         Route::get('settings', [PlatformSettingController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [PlatformSettingController::class, 'update'])->name('settings.update');
-        Route::post('settings/test-email', [PlatformSettingController::class, 'testEmail'])->name('settings.test-email');
 
         // All Users (cross-tenant view)
         Route::get('users', [PlatformUserController::class, 'index'])->name('users.index');
@@ -115,16 +137,6 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::get('reports/course-performance', [PlatformReportController::class, 'coursePerformance'])->name('reports.course-performance');
         Route::get('reports/quiz-analytics', [PlatformReportController::class, 'quizAnalytics'])->name('reports.quiz-analytics');
 
-        // Certificate Templates
-        Route::get("certificates/templates", [CertificateTemplateController::class, "index"])->name("certificates.templates.index");
-        Route::get("certificates/templates/create", [CertificateTemplateController::class, "create"])->name("certificates.templates.create");
-        Route::post("certificates/templates", [CertificateTemplateController::class, "store"])->name("certificates.templates.store");
-        Route::get("certificates/templates/{id}/edit", [CertificateTemplateController::class, "edit"])->name("certificates.templates.edit");
-        Route::put("certificates/templates/{id}", [CertificateTemplateController::class, "update"])->name("certificates.templates.update");
-        Route::get("certificates/templates/{id}/preview", [CertificateTemplateController::class, "preview"])->name("certificates.templates.preview");
-        Route::patch("certificates/templates/{id}/toggle", [CertificateTemplateController::class, "toggleActive"])->name("certificates.templates.toggle");
-        Route::delete("certificates/templates/{id}", [CertificateTemplateController::class, "destroy"])->name("certificates.templates.destroy");
-
         // Audit Logs
         Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
         Route::get('audit-logs/{auditLog}', [AuditLogController::class, 'show'])->name('audit-logs.show');
@@ -136,10 +148,12 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::delete('categories/{category}', [CourseCategoryController::class, 'destroy'])->name('categories.destroy');
 
         // Course Management (catalog)
-        Route::get('courses/bulk-assign', [CourseManagementController::class, 'bulkAssign'])->name('courses.bulk-assign');
-        Route::post('courses/bulk-assign', [CourseManagementController::class, 'bulkAssignSave'])->name('courses.bulk-assign.save');
         Route::resource('courses', CourseManagementController::class);
         Route::post('courses/{course}/assign-tenants', [CourseManagementController::class, 'assignTenants'])->name('courses.assign-tenants');
+
+        // Learning Paths (platform)
+        Route::resource('learning-paths', PlatformLearningPathController::class)->except(['show']);
+        Route::post('learning-paths/{learning_path}/assign-tenants', [PlatformLearningPathController::class, 'assignTenants'])->name('learning-paths.assign-tenants');
         Route::post('courses/{course}/lessons', [CourseManagementController::class, 'storeLesson'])->name('courses.lessons.store');
         Route::put('courses/{course}/lessons/{lesson}', [CourseManagementController::class, 'updateLesson'])->name('courses.lessons.update');
         Route::delete('courses/{course}/lessons/{lesson}', [CourseManagementController::class, 'destroyLesson'])->name('courses.lessons.destroy');
@@ -163,6 +177,20 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::post('policies/{policy}/push', [PolicyController::class, 'push'])->name('policies.push');
         Route::get('policies/{policy}/document', [PolicyController::class, 'viewDocument'])->name('policies.document');
 
+        // Announcements
+        Route::resource('announcements', ClientAnnouncementController::class)->except(['show'])->parameters(['announcements' => 'id']);
+        Route::post('announcements/{id}/publish', [ClientAnnouncementController::class, 'publish'])->name('announcements.publish');
+
+        // Surveys
+        Route::resource('surveys', ClientSurveyController::class)->except(['show'])->parameters(['surveys' => 'id']);
+        Route::get('surveys/{id}/results', [ClientSurveyController::class, 'results'])->name('surveys.results');
+
+        // Virtual Classrooms
+        Route::resource('virtual-classrooms', ClientVirtualClassroomController::class)->except(['show'])->parameters(['virtual-classrooms' => 'id']);
+        Route::get('virtual-classrooms/{id}/attendance', [ClientVirtualClassroomController::class, 'attendance'])->name('virtual-classrooms.attendance');
+        Route::post('virtual-classrooms/{id}/register-users', [ClientVirtualClassroomController::class, 'registerUsers'])->name('virtual-classrooms.register-users');
+        Route::post('virtual-classrooms/{id}/mark-attendance', [ClientVirtualClassroomController::class, 'markAttendance'])->name('virtual-classrooms.mark-attendance');
+
         Route::resource('phishing', PhishingController::class)->except(['edit', 'update', 'destroy']);
         Route::post('phishing/{campaign}/simulate', [PhishingController::class, 'simulate'])->name('phishing.simulate');
 
@@ -171,6 +199,14 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::get('reports/user-progress', [ClientReportController::class, 'userProgress'])->name('reports.user-progress');
         Route::get('reports/department-breakdown', [ClientReportController::class, 'departmentBreakdown'])->name('reports.department-breakdown');
         Route::get('reports/overdue-training', [ClientReportController::class, 'overdueTraining'])->name('reports.overdue-training');
+        Route::get('reports/learning-path-progress', [ClientReportController::class, 'learningPathProgress'])->name('reports.learning-path-progress');
+        Route::get('reports/survey-analytics', [ClientReportController::class, 'surveyAnalytics'])->name('reports.survey-analytics');
+        Route::get('reports/gamification', [ClientReportController::class, 'gamificationReport'])->name('reports.gamification');
+        Route::get('reports/export/{type}', [ClientReportController::class, 'exportReport'])->name('reports.export');
+
+        // Tenant settings
+        Route::get('settings', [ClientSettingsController::class, 'edit'])->name('settings.edit');
+        Route::put('settings', [ClientSettingsController::class, 'update'])->name('settings.update');
 
         // Client Course Builder
         Route::resource('courses', ClientCourseController::class);
@@ -186,14 +222,10 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::get('courses/{course}/assign-users', [ClientCourseController::class, 'assignUsers'])->name('courses.assign-users');
         Route::post('courses/{course}/assign-users', [ClientCourseController::class, 'assignUsersSave'])->name('courses.assign-users.save');
 
-        // Email Settings
-        Route::get("settings/email", [ClientSettingsController::class, "emailSettings"])->name("settings.email");
-        Route::put("settings/email", [ClientSettingsController::class, "updateEmailSettings"])->name("settings.email.update");
-        Route::delete("settings/email", [ClientSettingsController::class, "resetEmailSettings"])->name("settings.email.reset");
-        Route::post("settings/email/test", [ClientSettingsController::class, "testEmail"])->name("settings.email.test");
-        Route::get("settings/certificates", [CertificateSettingsController::class, "index"])->name("settings.certificates");
-        Route::put("settings/certificates", [CertificateSettingsController::class, "update"])->name("settings.certificates.update");
-        Route::get("settings/certificates/{id}/preview", [CertificateSettingsController::class, "preview"])->name("settings.certificates.preview");
+        // Learning Paths
+        Route::resource('learning-paths', ClientLearningPathController::class)->except(['show']);
+        Route::get('learning-paths/{learning_path}/assign-users', [ClientLearningPathController::class, 'assignUsers'])->name('learning-paths.assign-users');
+        Route::post('learning-paths/{learning_path}/assign-users', [ClientLearningPathController::class, 'assignUsersSave'])->name('learning-paths.assign-users.save');
     });
 
     // ── Manager Routes ──
@@ -217,6 +249,9 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::post('courses/{course}/quiz', [CourseController::class, 'submitQuiz'])->name('courses.submit-quiz');
         Route::get('courses/{course}/quiz-result/{attempt}', [CourseController::class, 'quizResult'])->name('courses.quiz-result');
 
+        Route::get('learning-paths', [EmployeeLearningPathController::class, 'index'])->name('learning-paths.index');
+        Route::get('learning-paths/{learning_path}', [EmployeeLearningPathController::class, 'show'])->name('learning-paths.show');
+
         Route::get('certificates', [CertificateController::class, 'index'])->name('certificates.index');
         Route::get('certificates/{certificate}/download', [CertificateController::class, 'download'])->name('certificates.download');
 
@@ -224,6 +259,18 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::get('policies/{policy}', [PolicyAcknowledgmentController::class, 'show'])->name('policies.show');
         Route::post('policies/{policy}/acknowledge', [PolicyAcknowledgmentController::class, 'acknowledge'])->name('policies.acknowledge');
         Route::get('policies/{policy}/document', [PolicyAcknowledgmentController::class, 'viewDocument'])->name('policies.document');
+
+        Route::get('announcements', [EmployeeAnnouncementController::class, 'index'])->name('announcements.index');
+        Route::get('announcements/{id}', [EmployeeAnnouncementController::class, 'show'])->name('announcements.show');
+        Route::post('announcements/{id}/read', [EmployeeAnnouncementController::class, 'markRead'])->name('announcements.read');
+
+        Route::get('surveys', [EmployeeSurveyController::class, 'index'])->name('surveys.index');
+        Route::get('surveys/{id}', [EmployeeSurveyController::class, 'show'])->name('surveys.show');
+        Route::post('surveys/{id}', [EmployeeSurveyController::class, 'submit'])->name('surveys.submit');
+        Route::get('surveys/{id}/thank-you', [EmployeeSurveyController::class, 'thankYou'])->name('surveys.thank-you');
+
+        Route::get('virtual-classrooms', [EmployeeVirtualClassroomController::class, 'index'])->name('virtual-classrooms.index');
+        Route::post('virtual-classrooms/{id}/register', [EmployeeVirtualClassroomController::class, 'register'])->name('virtual-classrooms.register');
 
         Route::get('leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard.index');
     });

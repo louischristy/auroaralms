@@ -7,6 +7,7 @@ use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -116,10 +117,20 @@ class User extends Authenticatable
         return $this->hasMany(UserBadge::class);
     }
 
+    public function streak(): HasOne
+    {
+        return $this->hasOne(UserStreak::class);
+    }
+
     // ── Scopes ──
 
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    public function gamificationPoints(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(GamificationPoint::class);
     }
 }
