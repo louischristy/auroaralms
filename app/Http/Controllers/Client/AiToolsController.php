@@ -21,7 +21,8 @@ class AiToolsController extends Controller
 {
     public function index()
     {
-        return view('client.ai.index');
+        $ai = AiService::forCurrentTenant();
+        return view('client.ai.index', ['hasApiKey' => $ai->hasApiKey()]);
     }
 
     // ── AI Course Generator ──
@@ -31,7 +32,7 @@ class AiToolsController extends Controller
         return view('client.ai.course-generator');
     }
 
-    public function generateCourse(Request $request, AiService $ai)
+    public function generateCourse(Request $request)
     {
         $request->validate([
             'topic' => 'required|string|max:200',
@@ -40,6 +41,7 @@ class AiToolsController extends Controller
             'lesson_count' => 'required|integer|min:2|max:8',
         ]);
 
+        $ai = AiService::forCurrentTenant();
         try {
             $data = $ai->generateCourseContent(
                 $request->topic,
@@ -117,7 +119,7 @@ class AiToolsController extends Controller
         return view('client.ai.quiz-generator', compact('courses'));
     }
 
-    public function generateQuiz(Request $request, AiService $ai)
+    public function generateQuiz(Request $request)
     {
         $request->validate([
             'course_id' => 'required|exists:courses,id',
@@ -127,6 +129,7 @@ class AiToolsController extends Controller
         $course = Course::with('lessons')->findOrFail($request->course_id);
         $lessonTitles = $course->lessons->pluck('title')->toArray();
 
+        $ai = AiService::forCurrentTenant();
         try {
             $data = $ai->generateQuizQuestions(
                 $course->title,
@@ -210,7 +213,7 @@ class AiToolsController extends Controller
         return view('client.ai.phishing-generator');
     }
 
-    public function generatePhishing(Request $request, AiService $ai)
+    public function generatePhishing(Request $request)
     {
         $request->validate([
             'scenario_type' => 'required|in:credential_harvest,malware_download,data_exfiltration,business_email_compromise,invoice_fraud,tech_support_scam',
@@ -219,6 +222,7 @@ class AiToolsController extends Controller
             'count' => 'required|integer|min:1|max:5',
         ]);
 
+        $ai = AiService::forCurrentTenant();
         try {
             $data = $ai->generatePhishingTemplates(
                 $request->scenario_type,
@@ -266,7 +270,7 @@ class AiToolsController extends Controller
 
     // ── Smart Risk Scoring ──
 
-    public function riskDashboard(AiService $ai)
+    public function riskDashboard()
     {
         $user = Auth::user();
         $tenantId = $user->tenant_id;
@@ -277,6 +281,7 @@ class AiToolsController extends Controller
             ->role(['employee', 'manager'])
             ->get();
 
+        $ai = AiService::forCurrentTenant();
         $riskData = [];
         $riskDistribution = ['low' => 0, 'medium' => 0, 'high' => 0, 'critical' => 0];
 

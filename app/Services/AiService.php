@@ -11,11 +11,47 @@ class AiService
     private string $model;
     private string $baseUrl;
 
-    public function __construct()
+    public function __construct(?string $tenantApiKey = null)
     {
-        $this->apiKey = config('services.openai.key', '');
-        $this->model = config('services.openai.model', 'gpt-4o-mini');
+        // Priority: tenant key → platform setting → .env
+        $this->apiKey = $tenantApiKey
+            ?: \App\Models\PlatformSetting::get('ai.openai_api_key', '')
+            ?: config('services.openai.key', '');
+
+        $this->model = \App\Models\PlatformSetting::get('ai.openai_model', '')
+            ?: config('services.openai.model', 'gpt-4o-mini');
+
         $this->baseUrl = config('services.openai.base_url', 'https://api.openai.com/v1');
+    }
+
+    /**
+     * Create an AiService instance resolved for the current tenant.
+     */
+    public static function forCurrentTenant(): self
+    {
+        $tenant = app()->bound('current_tenant') ? app('current_tenant') : null;
+        $tenantKey = null;
+
+        if ($tenant) {
+            $encrypted = $tenant->settings['openai_api_key'] ?? null;
+            if ($encrypted) {
+                try {
+                    $tenantKey = \Illuminate\Support\Facades\Crypt::decryptString($encrypted);
+                } catch (\Exception $e) {
+                    // Decryption failed — fall through to platform/env key
+                }
+            }
+        }
+
+        return new self($tenantKey);
+    }
+
+    /**
+     * Check if an API key is configured (at any level).
+     */
+    public function hasApiKey(): bool
+    {
+        return !empty($this->apiKey);
     }
 
     /**

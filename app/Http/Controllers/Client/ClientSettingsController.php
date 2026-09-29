@@ -7,6 +7,7 @@ use App\Http\Middleware\ResolveSubdomain;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Validation\Rule;
 
 class ClientSettingsController extends Controller
@@ -25,6 +26,26 @@ class ClientSettingsController extends Controller
     public function update(Request $request)
     {
         $tenant = $this->tenant();
+
+        // Handle AI settings separately
+        if ($request->has('_ai_settings')) {
+            $request->validate([
+                'openai_api_key' => ['nullable', 'string', 'max:200'],
+            ]);
+
+            $settings = $tenant->settings ?? [];
+
+            if ($request->boolean('remove_api_key')) {
+                unset($settings['openai_api_key']);
+            } elseif ($request->filled('openai_api_key')) {
+                $settings['openai_api_key'] = Crypt::encryptString($request->openai_api_key);
+            }
+
+            $tenant->update(['settings' => $settings]);
+            Cache::forget("branding_{$tenant->id}");
+
+            return back()->with('success', 'AI settings updated.');
+        }
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
