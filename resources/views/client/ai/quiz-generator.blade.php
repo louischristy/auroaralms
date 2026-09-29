@@ -2,7 +2,7 @@
 @section('title', 'AI Quiz Generator')
 
 @section('content')
-<div class="max-w-5xl mx-auto py-8 px-4 sm:px-6" x-data="aiQuizGenerator()">
+<div class="max-w-5xl mx-auto py-8 px-4 sm:px-6" x-data="aiQuizGenerator" data-generate-url="{{ route('manage.ai.quiz-generate') }}">
     <div class="mb-6">
         <a href="{{ route('manage.ai.index') }}" class="text-sm text-emerald-600 hover:text-emerald-800">&larr; Back to AI Tools</a>
         <h1 class="text-2xl font-bold text-gray-900 mt-2">AI Quiz Generator</h1>
@@ -89,25 +89,4 @@
     </template>
 </div>
 
-<script>
-function aiQuizGenerator() {
-    return {
-        form: { course_id: '', question_count: '10' },
-        loading: false, error: '', result: null,
-        async generate() {
-            this.loading = true; this.error = ''; this.result = null;
-            try {
-                const res = await fetch('{{ route("manage.ai.quiz-generate") }}', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-                    body: JSON.stringify(this.form)
-                });
-                const data = await res.json();
-                if (data.success) { this.result = data.data; } else { this.error = data.error || 'Generation failed'; }
-            } catch (e) { this.error = 'Network error. Please try again.'; }
-            this.loading = false;
-        }
-    };
-}
-</script>
 @endsection

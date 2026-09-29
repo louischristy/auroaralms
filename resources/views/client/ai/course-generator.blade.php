@@ -2,7 +2,7 @@
 @section('title', 'AI Course Generator')
 
 @section('content')
-<div class="max-w-5xl mx-auto py-8 px-4 sm:px-6" x-data="aiCourseGenerator()">
+<div class="max-w-5xl mx-auto py-8 px-4 sm:px-6" x-data="aiCourseGenerator" data-generate-url="{{ route('manage.ai.course-generate') }}">
     <div class="mb-6">
         <a href="{{ route('manage.ai.index') }}" class="text-sm text-indigo-600 hover:text-indigo-800">&larr; Back to AI Tools</a>
         <h1 class="text-2xl font-bold text-gray-900 mt-2">AI Course Generator</h1>
@@ -105,29 +105,4 @@
     </template>
 </div>
 
-<script>
-function aiCourseGenerator() {
-    return {
-        form: { topic: '', difficulty: 'intermediate', target_audience: 'All employees', lesson_count: '4' },
-        loading: false,
-        error: '',
-        result: null,
-        async generate() {
-            this.loading = true;
-            this.error = '';
-            this.result = null;
-            try {
-                const res = await fetch('{{ route("manage.ai.course-generate") }}', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-                    body: JSON.stringify(this.form)
-                });
-                const data = await res.json();
-                if (data.success) { this.result = data.data; } else { this.error = data.error || 'Generation failed'; }
-            } catch (e) { this.error = 'Network error. Please try again.'; }
-            this.loading = false;
-        }
-    };
-}
-</script>
 @endsection
