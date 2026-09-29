@@ -31,7 +31,14 @@
                 </div>
                 <div>
                     <h3 class="text-lg font-semibold text-gray-900">AI Course Generator</h3>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">Requires API Key</span>
+                    @if($hasApiKey)
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        Ready
+                    </span>
+                    @else
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Requires API Key</span>
+                    @endif
                 </div>
             </div>
             <p class="text-sm text-gray-600">Generate complete cybersecurity training courses with lessons, objectives, and structured content from a topic description.</p>
@@ -45,7 +52,14 @@
                 </div>
                 <div>
                     <h3 class="text-lg font-semibold text-gray-900">AI Quiz Generator</h3>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800">Requires API Key</span>
+                    @if($hasApiKey)
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        Ready
+                    </span>
+                    @else
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Requires API Key</span>
+                    @endif
                 </div>
             </div>
             <p class="text-sm text-gray-600">Automatically create quiz questions for any course with multiple-choice answers, explanations, and varying difficulty levels.</p>
@@ -59,7 +73,14 @@
                 </div>
                 <div>
                     <h3 class="text-lg font-semibold text-gray-900">AI Phishing Generator</h3>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">Requires API Key</span>
+                    @if($hasApiKey)
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        Ready
+                    </span>
+                    @else
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Requires API Key</span>
+                    @endif
                 </div>
             </div>
             <p class="text-sm text-gray-600">Create realistic phishing email templates for security awareness simulations, with red flag indicators for training.</p>

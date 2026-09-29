@@ -59,15 +59,26 @@
         </div>
 
         @if(!empty($tenant->settings['openai_api_key']))
-        <div class="flex items-center gap-2">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                API Key Configured
-            </span>
-            <label class="flex items-center gap-1 text-sm text-gray-500">
+        <div class="flex items-center justify-between p-3 rounded-lg bg-green-50 border border-green-200">
+            <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                <div>
+                    <span class="text-sm font-medium text-green-800">OpenAI API Connected</span>
+                    <p class="text-xs text-green-600">Your organisation's API key is configured and active.</p>
+                </div>
+            </div>
+            <label class="flex items-center gap-1 text-sm text-gray-500 cursor-pointer">
                 <input type="checkbox" name="remove_api_key" value="1" class="rounded border-gray-300">
                 Remove key
             </label>
+        </div>
+        @else
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-200">
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+            <div>
+                <span class="text-sm font-medium text-gray-600">Not Connected</span>
+                <p class="text-xs text-gray-500">Enter your OpenAI API key, or the platform default will be used.</p>
+            </div>
         </div>
         @endif
 
