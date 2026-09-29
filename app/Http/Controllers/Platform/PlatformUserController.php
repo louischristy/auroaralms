@@ -42,4 +42,17 @@ class PlatformUserController extends Controller
 
         return back()->with('success', "Password reset email sent to {$user->email}.");
     }
+
+    public function destroy(int $user)
+    {
+        $user = User::withoutTenantScope()->findOrFail($user);
+
+        if (!$user->tenant_id || $user->id === 1) {
+            abort(403, 'Cannot delete platform admin users.');
+        }
+
+        $user->delete();
+
+        return back()->with('success', "User \"{$user->name}\" has been deleted.");
+    }
 }

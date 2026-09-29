@@ -147,6 +147,7 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::get('users', [PlatformUserController::class, 'index'])->name('users.index');
         Route::post('users/{user}/force-logout', [SessionController::class, 'forceLogout'])->name('users.force-logout');
         Route::post('users/{user}/reset-password', [PlatformUserController::class, 'resetPassword'])->name('users.reset-password');
+        Route::delete('users/{user}', [PlatformUserController::class, 'destroy'])->name('users.destroy');
 
         // Reports & Analytics
         Route::get('reports', [PlatformReportController::class, 'index'])->name('reports.index');

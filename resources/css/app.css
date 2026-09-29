@@ -38,31 +38,31 @@
     }
 
     .card {
-        @apply bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-shadow duration-200 hover:shadow-md;
+        @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden transition-shadow duration-200 hover:shadow-md;
     }
 
     .input {
-        @apply w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary-200 transition-all duration-200;
+        @apply w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary-200 transition-all duration-200;
     }
 
     .label {
-        @apply block text-sm font-medium text-gray-700 mb-1;
+        @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
     }
 
     .badge {
         @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
     }
     .badge-success {
-        @apply badge bg-green-100 text-green-800;
+        @apply badge bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400;
     }
     .badge-warning {
-        @apply badge bg-yellow-100 text-yellow-800;
+        @apply badge bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400;
     }
     .badge-danger {
-        @apply badge bg-red-100 text-red-800;
+        @apply badge bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400;
     }
     .badge-info {
-        @apply badge bg-blue-100 text-blue-800;
+        @apply badge bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400;
     }
 
     .bg-gradient-brand {
@@ -71,7 +71,7 @@
 
     /* Prose-like typography for lesson content */
     .lesson-content {
-        @apply text-gray-700 leading-relaxed text-base;
+        @apply text-gray-700 dark:text-gray-300 leading-relaxed text-base;
     }
     .lesson-content h1 {
         @apply text-2xl font-bold text-gray-900 mt-8 mb-4 pb-2 border-b border-gray-200;
@@ -102,10 +102,10 @@
         @apply mt-2 mb-0;
     }
     .lesson-content blockquote {
-        @apply border-l-4 border-indigo-200 pl-4 py-1 my-4 text-gray-600 italic bg-indigo-50/50 rounded-r-lg pr-4;
+        @apply border-l-4 border-indigo-200 dark:border-indigo-700 pl-4 py-1 my-4 text-gray-600 dark:text-gray-400 italic bg-indigo-50/50 dark:bg-indigo-900/20 rounded-r-lg pr-4;
     }
     .lesson-content code {
-        @apply bg-gray-100 text-sm px-1.5 py-0.5 rounded font-mono text-red-600;
+        @apply bg-gray-100 dark:bg-gray-800 text-sm px-1.5 py-0.5 rounded font-mono text-red-600 dark:text-red-400;
     }
     .lesson-content pre {
         @apply bg-gray-900 text-gray-100 rounded-lg p-4 mb-4 overflow-x-auto text-sm;
@@ -123,10 +123,10 @@
         @apply w-full border-collapse mb-4 text-sm;
     }
     .lesson-content th {
-        @apply bg-gray-50 text-left px-4 py-2 font-semibold text-gray-700 border border-gray-200;
+        @apply bg-gray-50 dark:bg-gray-800 text-left px-4 py-2 font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700;
     }
     .lesson-content td {
-        @apply px-4 py-2 border border-gray-200;
+        @apply px-4 py-2 border border-gray-200 dark:border-gray-700;
     }
     .lesson-content hr {
         @apply my-8 border-gray-200;

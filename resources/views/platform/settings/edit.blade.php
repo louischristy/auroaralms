@@ -197,6 +197,10 @@
                     <p class="text-xs text-green-600">Platform default API key is configured and active.</p>
                 </div>
             </div>
+            <label class="flex items-center gap-2 mt-2">
+                <input type="checkbox" name="remove_openai_key" value="1" class="rounded border-gray-300 text-indigo-600">
+                <span class="text-sm text-gray-600">Remove API key</span>
+            </label>
             @else
             <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-200">
                 <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>

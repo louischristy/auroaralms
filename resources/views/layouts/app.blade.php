@@ -16,7 +16,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 font-sans antialiased" x-data="{ sidebarOpen: false }">
+<body class="bg-gray-50 dark:bg-gray-900 font-sans antialiased" x-data="{ sidebarOpen: false }">
     <div class="flex h-screen overflow-hidden">
 
         {{-- Sidebar --}}
@@ -45,7 +45,7 @@
         {{-- Main content --}}
         <div class="flex flex-col flex-1 overflow-hidden">
             {{-- Top bar --}}
-            <header class="flex items-center justify-between h-16 px-4 sm:px-6 bg-white/80 backdrop-blur-sm border-b border-gray-200/70 sticky top-0 z-30">
+            <header class="flex items-center justify-between h-16 px-4 sm:px-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200/70 dark:border-gray-700/70 sticky top-0 z-30">
                 <button @click="sidebarOpen = true" class="lg:hidden text-gray-500 hover:text-gray-700">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
@@ -53,6 +53,18 @@
                 </button>
 
                 <div class="flex-1"></div>
+
+                {{-- Dark mode toggle --}}
+                <div x-data="darkMode" class="mr-2">
+                    <button @click="toggle()" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" title="Toggle dark mode">
+                        <svg x-show="!dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                        <svg x-show="dark" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                    </button>
+                </div>
 
                 {{-- Notification bell --}}
                 @auth
@@ -81,7 +93,7 @@
                         </svg>
                     </button>
                     <div x-show="open" @click.away="open = false"
-                         x-transition class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
+                         x-transition class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50">
                         <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Profile</a>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
@@ -92,7 +104,7 @@
             </header>
 
             {{-- Page content --}}
-            <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-gray-50 via-white to-indigo-50/30">
+            <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-gray-50 via-white to-indigo-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
                 {{-- Flash messages --}}
                 @if(session('success'))
                     <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
@@ -117,7 +129,7 @@
 
             {{-- Footer --}}
             @if($branding['show_powered_by'] ?? true)
-                <footer class="px-6 py-3 text-center text-xs text-gray-400 border-t border-gray-100">
+                <footer class="px-6 py-3 text-center text-xs text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-gray-700">
                     {{ $branding['powered_by_text'] ?? 'Powered by Auroara Technologies' }}
                 </footer>
             @endif

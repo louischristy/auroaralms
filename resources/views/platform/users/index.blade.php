@@ -74,10 +74,15 @@
                                     <span class="badge-danger">Inactive</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-center">
+                            <td class="px-4 py-3 text-center space-x-2">
                                 <form method="POST" action="{{ route('platform.users.reset-password', $user) }}" class="inline">
                                     @csrf
                                     <button type="submit" class="text-xs text-blue-600 hover:text-blue-800 font-medium" title="Send password reset email">Reset Password</button>
+                                </form>
+                                <form method="POST" action="{{ route('platform.users.destroy', $user) }}" class="inline" x-data>
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button" x-on:click="if(confirm('Are you sure you want to delete this user?')) $el.closest('form').submit()" class="text-xs text-red-600 hover:text-red-800 font-medium" title="Delete user">Delete</button>
                                 </form>
                             </td>
                         </tr>

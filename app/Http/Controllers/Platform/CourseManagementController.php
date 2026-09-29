@@ -49,10 +49,20 @@ class CourseManagementController extends Controller
             'is_mandatory' => 'boolean',
         ]);
 
-        $validated['slug'] = Str::slug($validated['title']);
+        $slug = Str::slug($validated['title']);
+        $originalSlug = $slug;
+        $counter = 1;
+        while (Course::withTrashed()->where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $counter++;
+        }
+        $validated['slug'] = $slug;
         $validated['objectives'] = $this->parseObjectives($request->objectives);
 
-        $course = Course::create($validated);
+        try {
+            $course = Course::create($validated);
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Failed to create course. Please try again.');
+        }
 
         return redirect()->route('platform.courses.edit', $course)
             ->with('success', 'Course created. Now add lessons and a quiz.');
@@ -110,56 +120,6 @@ class CourseManagementController extends Controller
         $course->tenants()->sync($validated['tenant_ids'] ?? []);
 
         return back()->with('success', 'Tenant assignments updated.');
-    }
-
-    // ── Bulk tenant assignment ──
-
-    public function bulkAssign()
-    {
-        $courses = Course::whereNull('tenant_id')
-            ->where('is_active', true)
-            ->orderBy('category')
-            ->orderBy('title')
-            ->get();
-
-        $tenants = Tenant::where('is_active', true)->orderBy('name')->get();
-
-        // Build current assignments matrix
-        $assignments = [];
-        foreach ($courses as $course) {
-            $assignments[$course->id] = $course->tenants()->pluck('tenants.id')->toArray();
-        }
-
-        $categories = $courses->pluck('category')->unique()->filter()->sort()->values();
-
-        return view('platform.courses.bulk-assign', compact('courses', 'tenants', 'assignments', 'categories'));
-    }
-
-    public function bulkAssignSave(Request $request)
-    {
-        $validated = $request->validate([
-            'assignments' => ['nullable', 'array'],
-            'assignments.*' => ['array'],
-            'assignments.*.*' => ['exists:tenants,id'],
-        ]);
-
-        $assignments = $validated['assignments'] ?? [];
-
-        // Get all active platform courses
-        $courses = Course::whereNull('tenant_id')->where('is_active', true)->get();
-
-        $updated = 0;
-        foreach ($courses as $course) {
-            $tenantIds = array_map('intval', $assignments[$course->id] ?? []);
-            $current = $course->tenants()->pluck('tenants.id')->toArray();
-
-            if (array_diff($tenantIds, $current) || array_diff($current, $tenantIds)) {
-                $course->tenants()->sync($tenantIds);
-                $updated++;
-            }
-        }
-
-        return back()->with('success', "{$updated} course(s) updated.");
     }
 
     // ── Lesson management ──

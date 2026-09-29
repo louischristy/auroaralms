@@ -47,6 +47,11 @@ class PlatformSettingController extends Controller
             PlatformSetting::set('brand.favicon_path', '/uploads/branding/' . $faviconName);
         }
 
+        // Handle OpenAI key removal
+        if ($request->boolean('remove_openai_key')) {
+            PlatformSetting::where('group', 'ai')->where('key', 'openai_api_key')->delete();
+        }
+
         // Save text settings
         if (isset($validated['settings'])) {
             foreach ($validated['settings'] as $group => $keys) {
