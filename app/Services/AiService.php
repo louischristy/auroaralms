@@ -15,11 +15,11 @@ class AiService
     {
         // Priority: tenant key → platform setting → .env
         $this->apiKey = $tenantApiKey
-            ?: \App\Models\PlatformSetting::get('ai.openai_api_key', '')
-            ?: config('services.openai.key', '');
+            ?: (\App\Models\PlatformSetting::get('ai.openai_api_key', '') ?? '')
+            ?: (config('services.openai.key', '') ?? '');
 
-        $this->model = \App\Models\PlatformSetting::get('ai.openai_model', '')
-            ?: config('services.openai.model', 'gpt-4o-mini');
+        $this->model = (\App\Models\PlatformSetting::get('ai.openai_model', '') ?? '')
+            ?: (config('services.openai.model', 'gpt-4o-mini') ?? 'gpt-4o-mini');
 
         $this->baseUrl = config('services.openai.base_url', 'https://api.openai.com/v1');
     }
