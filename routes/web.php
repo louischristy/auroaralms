@@ -40,6 +40,7 @@ use App\Http\Controllers\Employee\PolicyAcknowledgmentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\Client\ClientSettingsController;
+use App\Http\Controllers\Client\AiToolsController;
 use App\Http\Controllers\Client\ClientSsoController;
 use App\Http\Controllers\LocaleController;
 use Illuminate\Support\Facades\Route;
@@ -233,6 +234,21 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::resource('learning-paths', ClientLearningPathController::class)->except(['show']);
         Route::get('learning-paths/{learning_path}/assign-users', [ClientLearningPathController::class, 'assignUsers'])->name('learning-paths.assign-users');
         Route::post('learning-paths/{learning_path}/assign-users', [ClientLearningPathController::class, 'assignUsersSave'])->name('learning-paths.assign-users.save');
+
+        // AI Tools
+        Route::prefix('ai')->name('ai.')->group(function () {
+            Route::get('/', [AiToolsController::class, 'index'])->name('index');
+            Route::get('course-generator', [AiToolsController::class, 'courseGenerator'])->name('course-generator');
+            Route::post('course-generate', [AiToolsController::class, 'generateCourse'])->name('course-generate');
+            Route::post('course-save', [AiToolsController::class, 'saveCourse'])->name('course-save');
+            Route::get('quiz-generator', [AiToolsController::class, 'quizGenerator'])->name('quiz-generator');
+            Route::post('quiz-generate', [AiToolsController::class, 'generateQuiz'])->name('quiz-generate');
+            Route::post('quiz-save', [AiToolsController::class, 'saveQuiz'])->name('quiz-save');
+            Route::get('phishing-generator', [AiToolsController::class, 'phishingGenerator'])->name('phishing-generator');
+            Route::post('phishing-generate', [AiToolsController::class, 'generatePhishing'])->name('phishing-generate');
+            Route::post('phishing-save', [AiToolsController::class, 'savePhishing'])->name('phishing-save');
+            Route::get('risk-dashboard', [AiToolsController::class, 'riskDashboard'])->name('risk-dashboard');
+        });
     });
 
     // ── Manager Routes ──
