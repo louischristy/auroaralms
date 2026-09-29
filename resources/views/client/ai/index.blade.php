@@ -41,7 +41,7 @@
                     @endif
                 </div>
             </div>
-            <p class="text-sm text-gray-600">Generate complete cybersecurity training courses with lessons, objectives, and structured content from a topic description.</p>
+            <p class="text-sm text-gray-600">Generate complete training courses with lessons, objectives, and structured content from a topic description.</p>
         </a>
 
         {{-- Quiz Generator --}}
@@ -83,7 +83,7 @@
                     @endif
                 </div>
             </div>
-            <p class="text-sm text-gray-600">Create realistic phishing email templates for security awareness simulations, with red flag indicators for training.</p>
+            <p class="text-sm text-gray-600">Create realistic phishing email templates for security awareness training and simulations, with red flag indicators.</p>
         </a>
 
         {{-- Risk Scoring --}}

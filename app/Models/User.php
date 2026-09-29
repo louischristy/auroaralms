@@ -133,4 +133,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(GamificationPoint::class);
     }
+
+    public function externalCredentials(): HasMany
+    {
+        return $this->hasMany(ExternalCredential::class);
+    }
 }

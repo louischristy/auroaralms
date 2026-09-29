@@ -73,6 +73,11 @@ class Course extends Model
         return $this->hasMany(CourseEnrollment::class);
     }
 
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(Assignment::class)->orderBy('sort_order');
+    }
+
     // ── Scopes ──
 
     public function scopeActive($query)

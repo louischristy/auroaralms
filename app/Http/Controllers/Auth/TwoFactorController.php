@@ -24,7 +24,7 @@ class TwoFactorController extends Controller
         $user = Auth::user();
 
         if ($user->two_factor_enabled) {
-            return redirect()->route('profile.edit')
+            return redirect()->route('settings.security')
                 ->with('info', 'Two-factor authentication is already enabled.');
         }
 
@@ -97,7 +97,7 @@ class TwoFactorController extends Controller
 
         AuditLogService::log('2fa_disabled', $user);
 
-        return redirect()->route('profile.edit')
+        return redirect()->route('settings.security')
             ->with('success', 'Two-factor authentication has been disabled.');
     }
 
@@ -187,7 +187,7 @@ class TwoFactorController extends Controller
         $user = Auth::user();
 
         if (!$user->two_factor_enabled) {
-            return redirect()->route('profile.edit');
+            return redirect()->route('settings.security');
         }
 
         $recoveryCodes = $this->totp->generateRecoveryCodes();

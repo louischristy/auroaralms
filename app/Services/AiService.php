@@ -99,7 +99,7 @@ class AiService
     public function generateCourseContent(string $topic, string $difficulty, string $targetAudience, int $lessonCount = 4): array
     {
         $systemPrompt = <<<PROMPT
-You are an expert cybersecurity training content creator. Generate structured course content for a Learning Management System.
+You are an expert training content creator. Generate structured course content for a Learning Management System.
 
 Return valid JSON only (no markdown fences). The JSON must have this structure:
 {
@@ -118,7 +118,7 @@ Return valid JSON only (no markdown fences). The JSON must have this structure:
 }
 PROMPT;
 
-        $userPrompt = "Create a {$difficulty} difficulty cybersecurity training course about \"{$topic}\" for {$targetAudience}. Generate exactly {$lessonCount} lessons. Make content practical, engaging, and relevant to workplace security.";
+        $userPrompt = "Create a {$difficulty} difficulty training course about \"{$topic}\" for {$targetAudience}. Generate exactly {$lessonCount} lessons. Make content practical, engaging, and relevant to the workplace.";
 
         $result = $this->chat($systemPrompt, $userPrompt, 0.7, 8192);
 
@@ -133,7 +133,7 @@ PROMPT;
         $lessonsText = implode(', ', $lessonTitles);
 
         $systemPrompt = <<<PROMPT
-You are a cybersecurity training assessment specialist. Generate quiz questions that test understanding, not just memorization.
+You are a training assessment specialist. Generate quiz questions that test understanding, not just memorization.
 
 Return valid JSON only (no markdown fences). The JSON must have this structure:
 {
@@ -176,7 +176,7 @@ PROMPT;
     public function generatePhishingTemplates(string $scenarioType, string $difficulty, string $industry = 'general', int $count = 3): array
     {
         $systemPrompt = <<<PROMPT
-You are a cybersecurity red team specialist creating phishing simulation templates for security awareness training. These are for EDUCATIONAL purposes only — used in controlled phishing simulations to train employees.
+You are a training simulation specialist creating phishing simulation templates for security awareness training. These are for EDUCATIONAL purposes only — used in controlled phishing simulations to train employees.
 
 Return valid JSON only (no markdown fences). The JSON must have this structure:
 {

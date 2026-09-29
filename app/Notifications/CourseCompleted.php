@@ -41,7 +41,7 @@ class CourseCompleted extends Notification implements ShouldQueue
             $message->action('View Course', url('/learn/courses/' . $this->course->id));
         }
 
-        $message->line('Keep up the great work with your security training!');
+        $message->line('Keep up the great work with your training!');
 
         return $message;
     }

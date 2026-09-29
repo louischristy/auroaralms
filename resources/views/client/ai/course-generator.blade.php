@@ -6,7 +6,7 @@
     <div class="mb-6">
         <a href="{{ route('manage.ai.index') }}" class="text-sm text-indigo-600 hover:text-indigo-800">&larr; Back to AI Tools</a>
         <h1 class="text-2xl font-bold text-gray-900 mt-2">AI Course Generator</h1>
-        <p class="mt-1 text-sm text-gray-500">Describe a cybersecurity topic and let AI generate a complete training course with lessons.</p>
+        <p class="mt-1 text-sm text-gray-500">Describe a topic and let AI generate a complete training course with lessons.</p>
     </div>
 
     {{-- Generation Form --}}
@@ -15,7 +15,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Course Topic</label>
-                    <input type="text" x-model="form.topic" placeholder="e.g., Recognizing Social Engineering Attacks" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    <input type="text" x-model="form.topic" placeholder="e.g., Project Management Fundamentals" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Difficulty Level</label>

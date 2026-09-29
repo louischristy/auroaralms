@@ -37,7 +37,7 @@
                     <img src="{{ $branding['logo_url'] }}" alt="{{ $platform }}" class="h-10 mb-2">
                 @endif
                 <p class="text-xl font-bold text-primary">{{ $platform }}</p>
-                <p class="text-sm text-gray-500">Security awareness training platform</p>
+                <p class="text-sm text-gray-500">Learning management platform</p>
             </div>
             <div class="text-right">
                 <p class="text-3xl font-bold tracking-tight text-gray-900">INVOICE</p>

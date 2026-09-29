@@ -16,7 +16,7 @@
 
 <div>
     <label for="title" class="label">Title *</label>
-    <input type="text" id="title" name="title" value="{{ old('title', $a?->title) }}" required maxlength="255" class="input" placeholder="e.g. New phishing awareness module available">
+    <input type="text" id="title" name="title" value="{{ old('title', $a?->title) }}" required maxlength="255" class="input" placeholder="e.g. New training module now available">
     @error('title')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
 </div>
 

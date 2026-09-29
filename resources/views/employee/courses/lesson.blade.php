@@ -167,7 +167,7 @@
                 </div>
                 <div>
                     <h3 class="font-semibold text-amber-900 text-sm">Key Takeaway</h3>
-                    <p class="text-sm text-amber-800 mt-1">Remember to apply what you've learned here in your day-to-day work. Cybersecurity is a shared responsibility — staying informed protects you and your organization.</p>
+                    <p class="text-sm text-amber-800 mt-1">Remember to apply what you've learned here in your day-to-day work. Learning is a continuous journey — applying what you learn strengthens you and your organization.</p>
                 </div>
             </div>
         </div>

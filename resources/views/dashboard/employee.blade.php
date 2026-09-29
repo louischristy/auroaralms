@@ -4,7 +4,7 @@
 <div class="space-y-6">
     <div>
         <h1 class="text-2xl font-bold text-gray-900">Welcome, {{ $user->name }}</h1>
-        <p class="text-sm text-gray-500 mt-1">Continue your cybersecurity awareness training.</p>
+        <p class="text-sm text-gray-500 mt-1">Continue your learning journey.</p>
     </div>
 
     {{-- Stats --}}

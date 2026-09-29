@@ -21,6 +21,7 @@ use App\Http\Controllers\Platform\TenantSsoController;
 use App\Http\Controllers\Client\ReportController as ClientReportController;
 use App\Http\Controllers\Client\UserController;
 use App\Http\Controllers\Client\DepartmentController;
+use App\Http\Controllers\Client\AssignmentController as ClientAssignmentController;
 use App\Http\Controllers\Client\ClientCourseController;
 use App\Http\Controllers\Client\PhishingController;
 use App\Http\Controllers\Client\PolicyController;
@@ -30,8 +31,11 @@ use App\Http\Controllers\Client\VirtualClassroomController as ClientVirtualClass
 use App\Http\Controllers\Employee\AnnouncementController as EmployeeAnnouncementController;
 use App\Http\Controllers\Employee\SurveyController as EmployeeSurveyController;
 use App\Http\Controllers\Employee\VirtualClassroomController as EmployeeVirtualClassroomController;
+use App\Http\Controllers\Employee\AssignmentController as EmployeeAssignmentController;
 use App\Http\Controllers\Employee\CertificateController;
+use App\Http\Controllers\Employee\ExternalCredentialController;
 use App\Http\Controllers\Employee\CourseController;
+use App\Http\Controllers\Client\CredentialController as ClientCredentialController;
 use App\Http\Controllers\Employee\LeaderboardController;
 use App\Http\Controllers\Employee\LearningPathController as EmployeeLearningPathController;
 use App\Http\Controllers\Platform\LearningPathController as PlatformLearningPathController;
@@ -43,12 +47,19 @@ use App\Http\Controllers\Client\ClientSettingsController;
 use App\Http\Controllers\Client\AiToolsController;
 use App\Http\Controllers\Client\ClientSsoController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\SecuritySettingsController;
+use App\Http\Controllers\CertificateVerificationController;
 use Illuminate\Support\Facades\Route;
 
 // ── Public ──
 Route::get('/', function () {
     return redirect()->route('login');
 });
+
+// ── Certificate Verification (Public, no auth) ──
+Route::get('verify', [CertificateVerificationController::class, 'verify'])->name('certificates.verify');
+Route::post('verify', [CertificateVerificationController::class, 'check'])->name('certificates.check');
+Route::get('verify/{code}', [CertificateVerificationController::class, 'check'])->name('certificates.verify.code');
 
 Route::post('locale/{locale}', [LocaleController::class, 'update'])->name('locale.update');
 
@@ -94,6 +105,10 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+
+    // Security Settings
+    Route::get('settings/security', [SecuritySettingsController::class, 'index'])->name('settings.security');
+    Route::put('settings/security/password', [SecuritySettingsController::class, 'updatePassword'])->name('settings.security.password');
 
     // Active Sessions
     Route::get('sessions', [SessionController::class, 'index'])->name('sessions.index');
@@ -230,10 +245,27 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::get('courses/{course}/assign-users', [ClientCourseController::class, 'assignUsers'])->name('courses.assign-users');
         Route::post('courses/{course}/assign-users', [ClientCourseController::class, 'assignUsersSave'])->name('courses.assign-users.save');
 
+        // Assignments
+        Route::get('assignments', [ClientAssignmentController::class, 'index'])->name('assignments.index');
+        Route::get('courses/{course}/assignments/create', [ClientAssignmentController::class, 'create'])->name('assignments.create');
+        Route::post('courses/{course}/assignments', [ClientAssignmentController::class, 'store'])->name('assignments.store');
+        Route::get('assignments/{assignment}/edit', [ClientAssignmentController::class, 'edit'])->name('assignments.edit');
+        Route::put('assignments/{assignment}', [ClientAssignmentController::class, 'update'])->name('assignments.update');
+        Route::get('assignments/{assignment}/submissions', [ClientAssignmentController::class, 'submissions'])->name('assignments.submissions');
+        Route::get('submissions/{submission}/review', [ClientAssignmentController::class, 'review'])->name('submissions.review');
+        Route::post('submissions/{submission}/review', [ClientAssignmentController::class, 'submitReview'])->name('submissions.review.submit');
+        Route::get('submissions/{submission}/download', function (\App\Models\AssignmentSubmission $submission) {
+            return \Illuminate\Support\Facades\Storage::download($submission->file_path, $submission->file_name);
+        })->name('submissions.download');
+
         // Learning Paths
         Route::resource('learning-paths', ClientLearningPathController::class)->except(['show']);
         Route::get('learning-paths/{learning_path}/assign-users', [ClientLearningPathController::class, 'assignUsers'])->name('learning-paths.assign-users');
         Route::post('learning-paths/{learning_path}/assign-users', [ClientLearningPathController::class, 'assignUsersSave'])->name('learning-paths.assign-users.save');
+
+        // Employee Credentials (manager view)
+        Route::get('credentials', [ClientCredentialController::class, 'index'])->name('credentials.index');
+        Route::get('credentials/{user}', [ClientCredentialController::class, 'show'])->name('credentials.show');
 
         // AI Tools
         Route::prefix('ai')->name('ai.')->group(function () {
@@ -278,6 +310,10 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::get('certificates', [CertificateController::class, 'index'])->name('certificates.index');
         Route::get('certificates/{certificate}/download', [CertificateController::class, 'download'])->name('certificates.download');
 
+        // External Credentials (unified view)
+        Route::resource('credentials', ExternalCredentialController::class)->except(['show']);
+        Route::get('credentials/{credential}/download', [ExternalCredentialController::class, 'download'])->name('credentials.download');
+
         Route::get('policies', [PolicyAcknowledgmentController::class, 'index'])->name('policies.index');
         Route::get('policies/{policy}', [PolicyAcknowledgmentController::class, 'show'])->name('policies.show');
         Route::post('policies/{policy}/acknowledge', [PolicyAcknowledgmentController::class, 'acknowledge'])->name('policies.acknowledge');
@@ -294,6 +330,11 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
 
         Route::get('virtual-classrooms', [EmployeeVirtualClassroomController::class, 'index'])->name('virtual-classrooms.index');
         Route::post('virtual-classrooms/{id}/register', [EmployeeVirtualClassroomController::class, 'register'])->name('virtual-classrooms.register');
+
+        Route::get('assignments', [EmployeeAssignmentController::class, 'index'])->name('assignments.index');
+        Route::get('assignments/{assignment}', [EmployeeAssignmentController::class, 'show'])->name('assignments.show');
+        Route::post('assignments/{assignment}/submit', [EmployeeAssignmentController::class, 'submit'])->name('assignments.submit');
+        Route::get('assignments/{assignment}/my-submission', [EmployeeAssignmentController::class, 'mySubmission'])->name('assignments.my-submission');
 
         Route::get('leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard.index');
     });
