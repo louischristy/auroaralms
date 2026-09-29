@@ -9,6 +9,7 @@ use App\Models\SurveyResponse;
 use App\Observers\GamificationObserver;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +20,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Force HTTPS in production
+        if (config('app.env') === 'production' || $this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
+
         // Gamification points
         foreach ([LessonCompletion::class, CourseEnrollment::class, QuizAttempt::class, SurveyResponse::class] as $model) {
             $model::observe(GamificationObserver::class);
