@@ -40,6 +40,7 @@ use App\Http\Controllers\Employee\PolicyAcknowledgmentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\Client\ClientSettingsController;
+use App\Http\Controllers\Client\ClientSsoController;
 use App\Http\Controllers\LocaleController;
 use Illuminate\Support\Facades\Route;
 
@@ -207,6 +208,12 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         // Tenant settings
         Route::get('settings', [ClientSettingsController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [ClientSettingsController::class, 'update'])->name('settings.update');
+
+        // SSO settings (client-admin self-service)
+        Route::get('sso', [ClientSsoController::class, 'index'])->name('sso.index');
+        Route::post('sso', [ClientSsoController::class, 'store'])->name('sso.store');
+        Route::put('sso/{sso}', [ClientSsoController::class, 'update'])->name('sso.update');
+        Route::delete('sso/{sso}', [ClientSsoController::class, 'destroy'])->name('sso.destroy');
 
         // Client Course Builder
         Route::resource('courses', ClientCourseController::class);
