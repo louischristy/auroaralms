@@ -18,3 +18,4 @@ yarn-error.log
 /.vscode
 /public/uploads
 .DS_Store
+build.tar.gz
