@@ -58,6 +58,11 @@ class CourseController extends Controller
                 ->get();
         }
 
+        // Derive courseIds from the loaded courses (needed for quiz lookup below)
+        if (!isset($courseIds)) {
+            $courseIds = $courses->pluck('id');
+        }
+
         // Get enrollments for this user
         $enrollments = CourseEnrollment::where('user_id', $user->id)
             ->select('id', 'user_id', 'course_id', 'status', 'progress_percent', 'due_date', 'completed_at')
