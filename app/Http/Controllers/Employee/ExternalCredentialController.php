@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Employee;
 
 use App\Http\Controllers\Controller;
+use App\Models\Badge;
 use App\Models\Certificate;
 use App\Models\ExternalCredential;
+use App\Models\UserBadge;
+use App\Services\BadgeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -22,7 +25,44 @@ class ExternalCredentialController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return view('employee.credentials.index', compact('certificates', 'externalCredentials'));
+        // Badges & achievements
+        $badges = Badge::active()->orderBy('criteria_value')->get();
+
+        // Evaluate any new badges the user may have earned
+        $user = Auth::user();
+        (new BadgeService())->evaluate($user);
+
+        $earnedBadges = UserBadge::withoutTenantScope()
+            ->where('user_id', $user->id)
+            ->with('badge')
+            ->get()
+            ->keyBy('badge_id');
+
+        // Get user stats for progress bars
+        $stats = $this->getBadgeStats($user);
+
+        return view('employee.credentials.index', compact(
+            'certificates', 'externalCredentials', 'badges', 'earnedBadges', 'stats'
+        ));
+    }
+
+    private function getBadgeStats($user): array
+    {
+        return [
+            'courses_completed' => \App\Models\CourseEnrollment::withoutTenantScope()
+                ->where('user_id', $user->id)
+                ->where('status', 'completed')
+                ->count(),
+            'quizzes_passed' => \App\Models\QuizAttempt::where('user_id', $user->id)
+                ->where('passed', true)
+                ->count(),
+            'perfect_scores' => \App\Models\QuizAttempt::where('user_id', $user->id)
+                ->where('score', 100)
+                ->count(),
+            'phishing_reports' => \App\Models\PhishingResult::where('user_id', $user->id)
+                ->where('status', 'reported')
+                ->count(),
+        ];
     }
 
     public function create()

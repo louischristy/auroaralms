@@ -26,7 +26,7 @@
     {{-- Platform Admin --}}
     @role('platform-admin')
         <div class="pt-4">
-            <p class="px-3 text-[11px] font-semibold text-indigo-400 uppercase tracking-widest">Platform</p>
+            <p class="px-3 text-[11px] font-semibold text-indigo-400 uppercase tracking-widest">{{ __('Platform') }}</p>
         </div>
         <a href="{{ route('platform.tenants.index') }}"
            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('platform.tenants.*') ? 'bg-white/15 text-white shadow-sm' : 'text-indigo-200 hover:bg-white/10 hover:text-white hover:translate-x-0.5' }}">
@@ -224,7 +224,7 @@
 
     {{-- Learning --}}
     <div class="pt-4">
-        <p class="px-3 text-[11px] font-semibold text-indigo-400 uppercase tracking-widest">Learning</p>
+        <p class="px-3 text-[11px] font-semibold text-indigo-400 uppercase tracking-widest">{{ __('Learning') }}</p>
     </div>
     <a href="{{ route('learn.courses.index') }}"
        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('learn.courses.*') ? 'bg-white/15 text-white shadow-sm' : 'text-indigo-200 hover:bg-white/10 hover:text-white hover:translate-x-0.5' }}">
@@ -297,7 +297,7 @@
 
     {{-- Account --}}
     <div class="pt-4">
-        <p class="px-3 text-[11px] font-semibold text-indigo-400 uppercase tracking-widest">Account</p>
+        <p class="px-3 text-[11px] font-semibold text-indigo-400 uppercase tracking-widest">{{ __('Account') }}</p>
     </div>
     <a href="{{ route('profile.edit') }}"
        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('profile.*') ? 'bg-white/15 text-white shadow-sm' : 'text-indigo-200 hover:bg-white/10 hover:text-white hover:translate-x-0.5' }}">

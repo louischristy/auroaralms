@@ -140,7 +140,13 @@ Each lesson must include:
 - Actionable best practices in <ul>/<li> lists
 - Key takeaways highlighted with <strong> tags
 - At least 500 words of substantive training content per lesson
-Do NOT write video scripts, slide outlines, or presentation notes. Write actual training content.{$lessonTypeInstruction}
+Do NOT write video scripts, slide outlines, or presentation notes. Write actual training content.
+
+For EACH lesson, also include a "youtube_suggestions" array with 2-3 relevant YouTube search queries that would help learners find supplementary video content. Format:
+"youtube_suggestions": [
+    {"query": "search query for YouTube", "description": "Brief description of what they will find"}
+]
+These should be specific, educational search terms related to the lesson topic.{$lessonTypeInstruction}
 PROMPT;
 
         $sourceContext = '';
