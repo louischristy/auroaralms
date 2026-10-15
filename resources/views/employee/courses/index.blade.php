@@ -10,7 +10,7 @@
         </div>
         @if(isset($categories) && $categories->count() > 1)
         <div>
-            <select onchange="window.location.href = this.value ? '{{ route('learn.courses') }}?category=' + encodeURIComponent(this.value) : '{{ route('learn.courses') }}'"
+            <select onchange="window.location.href = this.value ? '{{ route('courses.index') }}?category=' + encodeURIComponent(this.value) : '{{ route('courses.index') }}'"
                     class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:ring-primary-500 focus:border-primary-500 px-3 py-2">
                 <option value="">All Categories</option>
                 @foreach($categories as $cat)
