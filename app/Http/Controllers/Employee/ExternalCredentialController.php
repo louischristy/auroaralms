@@ -30,7 +30,7 @@ class ExternalCredentialController extends Controller
 
         // Evaluate any new badges the user may have earned
         $user = Auth::user();
-        (new BadgeService())->evaluate($user);
+        try { (new BadgeService())->evaluate($user); } catch (\Throwable $e) { \Log::warning("Badge evaluation failed: " . $e->getMessage()); }
 
         $earnedBadges = UserBadge::withoutTenantScope()
             ->where('user_id', $user->id)

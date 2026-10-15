@@ -132,7 +132,7 @@ Return valid JSON only (no markdown fences). The JSON must have this structure:
     ]
 }
 
-IMPORTANT: ALL lessons must have content_type set to "text" regardless of the lesson_type_counts requested.
+IMPORTANT: Set each lesson's content_type according to the lesson_type_counts requested. Use "text" for text lessons and "video" for video lessons. For video lessons, still provide rich HTML content but focus on key talking points, summaries, and supplementary reading material.
 ALL lesson content must be rich, detailed HTML training material that employees can read and learn from directly.
 Each lesson must include:
 - Clear explanations of concepts with <h2> and <h3> headings
