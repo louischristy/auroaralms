@@ -2,6 +2,7 @@
 @section('title', __('My Courses') . ' — ' . ($branding['platform_name'] ?? 'Auroara LMS'))
 
 @section('content')
+@php $coursesByCategory = $courses->groupBy('category'); @endphp
 <div class="space-y-8">
     {{-- Hero header --}}
     <div class="bg-gradient-to-r from-indigo-600 via-blue-600 to-blue-700 rounded-2xl px-8 py-10 text-white">
@@ -56,14 +57,14 @@
     </div>
 
     {{-- Course grid by category --}}
-    @forelse($coursesByCategory as $category => $courses)
+    @forelse($coursesByCategory as $category => $categoryCourses)
         <div>
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-lg font-bold text-gray-900">{{ $category }}</h2>
-                <span class="text-xs text-gray-400">{{ $courses->count() }} {{ $courses->count() === 1 ? __('course') : __('courses') }}</span>
+                <span class="text-xs text-gray-400">{{ $categoryCourses->count() }} {{ $categoryCourses->count() === 1 ? __('course') : __('courses') }}</span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                @foreach($courses as $course)
+                @foreach($categoryCourses as $course)
                     @php
                         $cLessons = $course->lessons->count();
                         $cCompleted = count($completedLessonsMap[$course->id] ?? []);
