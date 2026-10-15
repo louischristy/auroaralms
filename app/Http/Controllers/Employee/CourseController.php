@@ -127,7 +127,6 @@ class CourseController extends Controller
 
         $course->load([
             'lessons' => fn($q) => $q->where('is_active', true)->orderBy('sort_order')->orderBy('id'),
-            ->when($request->category, fn($q, $cat) => $q->where('category', $cat))
             'quiz',
         ]);
 
