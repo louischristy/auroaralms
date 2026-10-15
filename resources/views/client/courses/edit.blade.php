@@ -299,6 +299,53 @@
             </form>
         </div>
 
+        {{-- AI Quiz Generator --}}
+        <div class="card p-6 mb-6" x-data="{ aiQuizLoading: false, aiQuizCount: 10, aiQuizError: '', aiQuizSuccess: '' }">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-semibold text-gray-900">Generate Quiz with AI</h2>
+            </div>
+            <p class="text-sm text-gray-500 mb-4">Automatically generate quiz questions based on this course's lessons using AI.</p>
+            <div class="flex items-end gap-4">
+                <div>
+                    <label class="label">Number of Questions</label>
+                    <input type="number" x-model="aiQuizCount" min="3" max="20" class="input w-32">
+                </div>
+                <button type="button"
+                    @click="
+                        aiQuizLoading = true; aiQuizError = ''; aiQuizSuccess = '';
+                        fetch('{{ route('manage.ai.quiz-generate') }}', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify({ course_id: {{ $course->id }}, question_count: parseInt(aiQuizCount) })
+                        })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Now save the quiz via hidden form POST
+                                let form = document.createElement('form');
+                                form.method = 'POST';
+                                form.action = '{{ route('manage.ai.quiz-save') }}';
+                                let token = document.createElement('input');
+                                token.type = 'hidden'; token.name = '_token'; token.value = '{{ csrf_token() }}';
+                                form.appendChild(token);
+                                document.body.appendChild(form);
+                                form.submit();
+                            } else {
+                                aiQuizError = data.error || 'Failed to generate quiz.';
+                            }
+                            aiQuizLoading = false;
+                        })
+                        .catch(e => { aiQuizError = 'Network error: ' + e.message; aiQuizLoading = false; });
+                    "
+                    :disabled="aiQuizLoading"
+                    class="btn-primary text-sm flex items-center gap-2">
+                    <span x-show="aiQuizLoading" class="animate-spin">&#9696;</span>
+                    <span x-text="aiQuizLoading ? 'Generating...' : '✨ Generate Quiz with AI'"></span>
+                </button>
+            </div>
+            <p x-show="aiQuizError" x-text="aiQuizError" class="text-sm text-red-600 mt-3"></p>
+        </div>
+
         {{-- Questions --}}
         @if($course->quiz)
             @if($course->quiz->questions->isNotEmpty())

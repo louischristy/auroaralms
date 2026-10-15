@@ -120,7 +120,7 @@ Return valid JSON only (no markdown fences). The JSON must have this structure:
     "title": "Course title",
     "description": "2-3 sentence course description",
     "objectives": ["objective1", "objective2", "objective3", "objective4"],
-    "category": "One of: Data Protection & Privacy, Social Engineering, Network Security, Incident Response, Compliance & Governance, Cloud Security, Application Security, Physical Security, Identity & Access Management, Emerging Threats",
+    "category": "One of: Phishing & Email Security, Social Engineering, Password & Authentication, Data Protection & Privacy, Malware & Ransomware, Mobile & Remote Work Security, Physical Security & Workplace Safety, Incident Response & Compliance, Organization Specific",
     "duration_minutes": estimated_total_minutes,
     "lessons": [
         {
@@ -132,9 +132,15 @@ Return valid JSON only (no markdown fences). The JSON must have this structure:
     ]
 }
 
-For video lessons, set content_type to "video" and write content as a video script outline.
-For ppt lessons, set content_type to "ppt" and write content as slide-by-slide presentation notes.
-For text lessons, set content_type to "text" and write full readable lesson content.{$lessonTypeInstruction}
+IMPORTANT: ALL lessons must have content_type set to "text" regardless of the lesson_type_counts requested.
+ALL lesson content must be rich, detailed HTML training material that employees can read and learn from directly.
+Each lesson must include:
+- Clear explanations of concepts with <h2> and <h3> headings
+- Real-world examples and scenarios in <p> tags
+- Actionable best practices in <ul>/<li> lists
+- Key takeaways highlighted with <strong> tags
+- At least 500 words of substantive training content per lesson
+Do NOT write video scripts, slide outlines, or presentation notes. Write actual training content.{$lessonTypeInstruction}
 PROMPT;
 
         $sourceContext = '';
