@@ -5,17 +5,17 @@
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">Career Paths</h1>
-            <p class="text-sm text-gray-500 mt-1">Define career progression paths with stages and milestones for your organization.</p>
+            <h1 class="text-2xl font-bold text-gray-900">{{ __('Career Paths') }}</h1>
+            <p class="text-sm text-gray-500 mt-1">{{ __('Define career progression paths with stages and milestones for your organization.') }}</p>
         </div>
         @if($tenantId)
-            <a href="{{ route('manage.career-paths.create') }}" class="btn-primary text-sm">+ New Career Path</a>
+            <a href="{{ route('manage.career-paths.create') }}" class="btn-primary text-sm">+ {{ __('New Career Path') }}</a>
         @endif
     </div>
 
     <div class="card p-4">
         <form method="GET" class="flex items-center gap-4 flex-wrap">
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by title..." class="input w-64">
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="{{ __('Search by title...') }}" class="input w-64">
             <button type="submit" class="btn-primary text-sm">Filter</button>
             @if(request('search'))
                 <a href="{{ route('manage.career-paths.index') }}" class="text-sm text-gray-500 hover:text-gray-700">Clear</a>
@@ -61,19 +61,19 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 text-right whitespace-nowrap">
-                            <a href="{{ route('manage.career-paths.show', $path->id) }}" class="text-secondary hover:text-primary text-sm font-medium">View</a>
+                            <a href="{{ route('manage.career-paths.show', $path->id) }}" class="text-secondary hover:text-primary text-sm font-medium">{{ __('View') }}</a>
                             @if($tenantId)
-                                <a href="{{ route('manage.career-paths.edit', $path->id) }}" class="ml-3 text-secondary hover:text-primary text-sm font-medium">Edit</a>
+                                <a href="{{ route('manage.career-paths.edit', $path->id) }}" class="ml-3 text-secondary hover:text-primary text-sm font-medium">{{ __('Edit') }}</a>
                                 <form method="POST" action="{{ route('manage.career-paths.destroy', $path->id) }}" class="inline" x-data
                                       x-on:submit="if (!confirm('Delete this career path?')) $event.preventDefault()">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="ml-3 text-red-600 hover:text-red-800 text-sm font-medium">Delete</button>
+                                    <button type="submit" class="ml-3 text-red-600 hover:text-red-800 text-sm font-medium">{{ __('Delete') }}</button>
                                 </form>
                             @endif
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="px-6 py-12 text-center text-gray-400">No career paths found.</td></tr>
+                    <tr><td colspan="5" class="px-6 py-12 text-center text-gray-400">{{ __('No career paths found.') }}</td></tr>
                 @endforelse
             </tbody>
         </table>

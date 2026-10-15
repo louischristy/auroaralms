@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CareerPath;
 use App\Models\CareerPathEnrollment;
 use App\Models\Course;
+use App\Models\CourseEnrollment;
 use App\Models\Certificate;
 use App\Models\ExternalCredential;
 use Illuminate\Http\Request;
@@ -46,19 +47,15 @@ class CareerPathController extends Controller
             ->where('career_path_id', $id)
             ->first();
 
-        // Gather user's completed course IDs and certification names for progress
-        $completedCourseIds = \App\Models\CourseEnrollment::withoutTenantScope()
+        // Pre-load completed course IDs (single query, no N+1)
+        $completedCourseIds = CourseEnrollment::withoutTenantScope()
             ->where('user_id', $user->id)
             ->where('status', 'completed')
             ->pluck('course_id')
             ->all();
 
-        $userCertNames = Certificate::withoutTenantScope()
-            ->where('user_id', $user->id)
-            ->pluck('course_id')
-            ->all();
-
-        $userCredentialNames = ExternalCredential::withoutTenantScope()
+        // Pre-load verified credential names
+        $completedCertNames = ExternalCredential::withoutTenantScope()
             ->where('user_id', $user->id)
             ->where('status', 'verified')
             ->pluck('credential_name')
@@ -74,24 +71,50 @@ class CareerPathController extends Controller
 
         // Calculate stage completion
         $stageProgress = [];
+        $firstIncompleteStageId = null;
+        $allComplete = true;
+
         foreach ($path->stages as $stage) {
             $reqCourses = $stage->required_courses ?? [];
             $reqCerts = $stage->required_certifications ?? [];
 
             $courseDone = empty($reqCourses) || collect($reqCourses)->every(fn($cid) => in_array($cid, $completedCourseIds));
+            $certDone = empty($reqCerts) || collect($reqCerts)->every(fn($cert) => in_array(strtolower(trim($cert)), $completedCertNames));
 
-            $certDone = empty($reqCerts) || collect($reqCerts)->every(function ($cert) use ($userCredentialNames) {
-                return in_array(strtolower(trim($cert)), $userCredentialNames);
-            });
-
+            $complete = $courseDone && $certDone;
             $stageProgress[$stage->id] = [
                 'course_done' => $courseDone,
                 'cert_done' => $certDone,
-                'complete' => $courseDone && $certDone,
+                'complete' => $complete,
             ];
+
+            if (!$complete) {
+                $allComplete = false;
+                if ($firstIncompleteStageId === null) {
+                    $firstIncompleteStageId = $stage->id;
+                }
+            }
         }
 
-        return view('employee.career-paths.show', compact('path', 'enrollment', 'stageProgress', 'courses'));
+        // Auto-advance current_stage_id and set completed_at
+        if ($enrollment) {
+            $needsSave = false;
+
+            if ($allComplete && !$enrollment->completed_at) {
+                $enrollment->completed_at = now();
+                $enrollment->current_stage_id = $path->stages->last()?->id;
+                $needsSave = true;
+            } elseif (!$allComplete && $firstIncompleteStageId && $enrollment->current_stage_id !== $firstIncompleteStageId) {
+                $enrollment->current_stage_id = $firstIncompleteStageId;
+                $needsSave = true;
+            }
+
+            if ($needsSave) {
+                $enrollment->save();
+            }
+        }
+
+        return view('employee.career-paths.show', compact('path', 'enrollment', 'stageProgress', 'courses', 'completedCourseIds', 'completedCertNames'));
     }
 
     public function enroll(int $id)
@@ -115,6 +138,6 @@ class CareerPathController extends Controller
         );
 
         return redirect()->route('learn.career-paths.show', $path->id)
-            ->with('success', 'You have enrolled in this career path.');
+            ->with('success', __('You have enrolled in this career path.'));
     }
 }
