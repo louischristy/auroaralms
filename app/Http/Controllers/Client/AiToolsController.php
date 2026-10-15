@@ -139,9 +139,16 @@ class AiToolsController extends Controller
 
         DB::beginTransaction();
         try {
+            $slug = Str::slug($data['title']);
+            $originalSlug = $slug;
+            $counter = 1;
+            while (Course::withTrashed()->where('slug', $slug)->exists()) {
+                $slug = $originalSlug . '-' . $counter++;
+            }
+
             $course = Course::create([
                 'title' => $data['title'],
-                'slug' => Str::slug($data['title']),
+                'slug' => $slug,
                 'description' => $data['description'],
                 'objectives' => $data['objectives'] ?? [],
                 'category' => $data['category'] ?? 'Emerging Threats',
