@@ -92,13 +92,13 @@
                     </label>
                 </div>
 
-                <div class="flex justify-between pt-4 border-t">
-                    <form method="POST" action="{{ route('platform.courses.destroy', $course) }}" onsubmit="return confirm('Delete this course? This cannot be undone.')">
-                        @csrf @method('DELETE')
-                        <button type="submit" class="text-sm text-red-600 hover:text-red-800">Delete Course</button>
-                    </form>
+                <div class="flex justify-end pt-4 border-t">
                     <button type="submit" class="btn-primary text-sm">Save Changes</button>
                 </div>
+            </form>
+            <form method="POST" action="{{ route('platform.courses.destroy', $course) }}" onsubmit="return confirm('Are you sure you want to delete this course? This action cannot be undone.')" class="mt-4 pt-4 border-t border-red-100">
+                @csrf @method('DELETE')
+                <button type="submit" class="text-sm text-red-500 hover:text-red-700">🗑 Delete this course</button>
             </form>
         </div>
     </div>
