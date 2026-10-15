@@ -19,7 +19,7 @@ class CourseController extends Controller
     /**
      * List courses available/enrolled for the current user.
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
         $tenantId = $user->tenant_id;
@@ -41,6 +41,7 @@ class CourseController extends Controller
                   ->orWhere('tenant_id', $tenantId);
             })
             ->where('is_active', true)
+            ->when($request->category, fn($q, $cat) => $q->where('category', $cat))
             ->select('id', 'title', 'slug', 'description', 'category', 'difficulty', 'thumbnail_path', 'duration_minutes', 'is_mandatory', 'sort_order')
             ->withCount(['lessons' => fn($q) => $q->where('is_active', true)])
             ->orderBy('category')
@@ -85,7 +86,8 @@ class CourseController extends Controller
             }
         }
 
-        return view('employee.courses.index', compact('courses', 'enrollments', 'completedLessonsMap', 'courseQuizMap', 'quizPassedMap'));
+        $categories = Course::where(function ($q) use ($courseIds, $tenantId) { $q->whereIn('id', $courseIds)->orWhere('tenant_id', $tenantId); })->where('is_active', true)->distinct()->pluck('category')->filter()->sort()->values();
+        return view('employee.courses.index', compact('courses', 'enrollments', 'completedLessonsMap', 'courseQuizMap', 'quizPassedMap', 'categories'));
     }
 
     /**
@@ -110,6 +112,7 @@ class CourseController extends Controller
 
         $course->load([
             'lessons' => fn($q) => $q->where('is_active', true)->orderBy('sort_order')->orderBy('id'),
+            ->when($request->category, fn($q, $cat) => $q->where('category', $cat))
             'quiz',
         ]);
 
@@ -162,6 +165,7 @@ class CourseController extends Controller
         }
 
         $course->load(['lessons' => fn($q) => $q->where('is_active', true)->orderBy('sort_order')->orderBy('id')]);
+            ->when($request->category, fn($q, $cat) => $q->where('category', $cat))
 
         $completedLessonIds = LessonCompletion::where('user_id', $user->id)
             ->where('course_id', $course->id)
@@ -217,6 +221,7 @@ class CourseController extends Controller
         // Use sort_order + id to handle duplicate sort_order values
         $nextLesson = Lesson::where('course_id', $course->id)
             ->where('is_active', true)
+            ->when($request->category, fn($q, $cat) => $q->where('category', $cat))
             ->where(function ($q) use ($lesson) {
                 $q->where('sort_order', '>', $lesson->sort_order)
                   ->orWhere(function ($q2) use ($lesson) {
