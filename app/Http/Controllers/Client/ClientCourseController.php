@@ -121,6 +121,7 @@ class ClientCourseController extends Controller
         $validated['slug'] = Str::slug($validated['title']);
         $validated['objectives'] = $this->parseObjectives($request->objectives);
         $validated['tenant_id'] = $tenantId;
+        $validated['is_active'] = true;
 
         $course = Course::create($validated);
 

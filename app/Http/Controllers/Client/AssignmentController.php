@@ -52,14 +52,14 @@ class AssignmentController extends Controller
                 ->orderBy('sort_order')
                 ->get()
                 ->groupBy('course_id');
-            $courses = Course::withoutTenantScope()->whereIn('id', $assignments->keys())->get()->keyBy('id');
+            $courses = Course::whereIn('id', $assignments->keys())->get()->keyBy('id');
         } else {
             $assignments = Assignment::with(['course', 'submissions'])
                 ->orderBy('course_id')
                 ->orderBy('sort_order')
                 ->get()
                 ->groupBy('course_id');
-            $courses = Course::withoutTenantScope()->whereIn('id', $assignments->keys())->get()->keyBy('id');
+            $courses = Course::whereIn('id', $assignments->keys())->get()->keyBy('id');
         }
 
         return view('client.assignments.index', compact('assignments', 'courses'));

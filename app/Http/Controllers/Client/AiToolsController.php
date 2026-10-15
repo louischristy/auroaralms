@@ -39,7 +39,31 @@ class AiToolsController extends Controller
             'difficulty' => 'required|in:beginner,intermediate,advanced',
             'target_audience' => 'required|string|max:200',
             'lesson_count' => 'required|integer|min:2|max:8',
+            'source_file' => 'nullable|file|mimes:pdf,docx,txt|max:5120',
+            'lesson_type_counts' => 'nullable|array',
+            'lesson_type_counts.video' => 'nullable|integer|min:0|max:8',
+            'lesson_type_counts.text' => 'nullable|integer|min:0|max:8',
+            'lesson_type_counts.ppt' => 'nullable|integer|min:0|max:8',
         ]);
+
+        // Extract text from uploaded file
+        $sourceContent = '';
+        if ($request->hasFile('source_file')) {
+            $file = $request->file('source_file');
+            $ext = strtolower($file->getClientOriginalExtension());
+
+            if ($ext === 'txt') {
+                $sourceContent = file_get_contents($file->getRealPath());
+            } elseif ($ext === 'docx') {
+                // Basic DOCX text extraction via zip
+                $sourceContent = $this->extractDocxText($file->getRealPath());
+            } elseif ($ext === 'pdf') {
+                // Basic PDF text extraction
+                $sourceContent = $this->extractPdfText($file->getRealPath());
+            }
+        }
+
+        $lessonTypeCounts = $request->input('lesson_type_counts', []);
 
         $ai = AiService::forCurrentTenant();
         try {
@@ -47,7 +71,9 @@ class AiToolsController extends Controller
                 $request->topic,
                 $request->difficulty,
                 $request->target_audience,
-                $request->lesson_count
+                $request->lesson_count,
+                $sourceContent,
+                $lessonTypeCounts
             );
 
             // Store in session for review before saving
@@ -57,6 +83,49 @@ class AiToolsController extends Controller
         } catch (\RuntimeException $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 422);
         }
+    }
+
+    /**
+     * Extract text from a DOCX file by reading the XML inside the zip.
+     */
+    private function extractDocxText(string $path): string
+    {
+        $text = '';
+        $zip = new \ZipArchive();
+        if ($zip->open($path) === true) {
+            $xml = $zip->getFromName('word/document.xml');
+            $zip->close();
+            if ($xml) {
+                $text = strip_tags($xml);
+                $text = preg_replace('/\s+/', ' ', $text);
+            }
+        }
+        return trim($text);
+    }
+
+    /**
+     * Extract text from a PDF file using basic stream parsing.
+     */
+    private function extractPdfText(string $path): string
+    {
+        // Try pdftotext if available
+        $output = '';
+        $returnCode = -1;
+        if (function_exists('exec')) {
+            @exec('pdftotext ' . escapeshellarg($path) . ' - 2>/dev/null', $lines, $returnCode);
+            if ($returnCode === 0 && !empty($lines)) {
+                return implode("\n", $lines);
+            }
+        }
+
+        // Fallback: read raw and extract visible strings
+        $raw = file_get_contents($path);
+        // Extract text between BT and ET markers (basic)
+        preg_match_all('/\(([^)]+)\)/', $raw, $matches);
+        if (!empty($matches[1])) {
+            $output = implode(' ', $matches[1]);
+        }
+        return mb_substr(trim($output), 0, 8000);
     }
 
     public function saveCourse(Request $request)
@@ -89,7 +158,7 @@ class AiToolsController extends Controller
                     'title' => $lessonData['title'],
                     'slug' => Str::slug($lessonData['title']),
                     'content' => $lessonData['content'],
-                    'content_type' => 'text',
+                    'content_type' => $lessonData['content_type'] ?? 'text',
                     'duration_minutes' => $lessonData['duration_minutes'] ?? 10,
                     'sort_order' => $i + 1,
                     'is_active' => true,

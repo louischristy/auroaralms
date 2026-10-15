@@ -43,11 +43,13 @@ use App\Http\Controllers\Client\ClientLearningPathController;
 use App\Http\Controllers\Employee\PolicyAcknowledgmentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SessionController;
+use App\Http\Controllers\Client\CareerPathController as ClientCareerPathController;
 use App\Http\Controllers\Client\ClientSettingsController;
 use App\Http\Controllers\Client\AiToolsController;
 use App\Http\Controllers\Client\ClientSsoController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\SecuritySettingsController;
+use App\Http\Controllers\Employee\CareerPathController as EmployeeCareerPathController;
 use App\Http\Controllers\CertificateVerificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -264,6 +266,9 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::get('learning-paths/{learning_path}/assign-users', [ClientLearningPathController::class, 'assignUsers'])->name('learning-paths.assign-users');
         Route::post('learning-paths/{learning_path}/assign-users', [ClientLearningPathController::class, 'assignUsersSave'])->name('learning-paths.assign-users.save');
 
+        // Career Paths
+        Route::resource('career-paths', ClientCareerPathController::class);
+
         // Employee Credentials (manager view)
         Route::get('credentials', [ClientCredentialController::class, 'index'])->name('credentials.index');
         Route::get('credentials/{user}', [ClientCredentialController::class, 'show'])->name('credentials.show');
@@ -336,6 +341,10 @@ Route::middleware(['auth', 'resolve.tenant', 'inject.branding', '2fa.verified'])
         Route::get('assignments/{assignment}', [EmployeeAssignmentController::class, 'show'])->name('assignments.show');
         Route::post('assignments/{assignment}/submit', [EmployeeAssignmentController::class, 'submit'])->name('assignments.submit');
         Route::get('assignments/{assignment}/my-submission', [EmployeeAssignmentController::class, 'mySubmission'])->name('assignments.my-submission');
+
+        Route::get('career-paths', [EmployeeCareerPathController::class, 'index'])->name('career-paths.index');
+        Route::get('career-paths/{id}', [EmployeeCareerPathController::class, 'show'])->name('career-paths.show');
+        Route::post('career-paths/{id}/enroll', [EmployeeCareerPathController::class, 'enroll'])->name('career-paths.enroll');
 
         Route::get('leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard.index');
     });

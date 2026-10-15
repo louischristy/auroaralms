@@ -57,6 +57,7 @@ class CourseManagementController extends Controller
         }
         $validated['slug'] = $slug;
         $validated['objectives'] = $this->parseObjectives($request->objectives);
+        $validated['is_active'] = true;
 
         try {
             $course = Course::create($validated);

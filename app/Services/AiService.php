@@ -96,8 +96,22 @@ class AiService
     /**
      * Generate course content for a cybersecurity topic.
      */
-    public function generateCourseContent(string $topic, string $difficulty, string $targetAudience, int $lessonCount = 4): array
+    public function generateCourseContent(string $topic, string $difficulty, string $targetAudience, int $lessonCount = 4, string $sourceContent = '', array $lessonTypeCounts = []): array
     {
+        // Build lesson type instruction
+        $lessonTypeInstruction = '';
+        if (!empty($lessonTypeCounts)) {
+            $parts = [];
+            foreach ($lessonTypeCounts as $type => $count) {
+                if ($count > 0) {
+                    $parts[] = "{$count} {$type} lesson(s)";
+                }
+            }
+            if (!empty($parts)) {
+                $lessonTypeInstruction = "\nLesson type distribution: " . implode(', ', $parts) . '. Each lesson must include a \"content_type\" field with one of: \"text\", \"video\", or \"ppt\".';
+            }
+        }
+
         $systemPrompt = <<<PROMPT
 You are an expert training content creator. Generate structured course content for a Learning Management System.
 
@@ -112,13 +126,24 @@ Return valid JSON only (no markdown fences). The JSON must have this structure:
         {
             "title": "Lesson title",
             "content": "Full HTML lesson content with <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em> tags. Include real-world examples, best practices, and actionable advice. At least 400 words per lesson.",
+            "content_type": "text or video or ppt",
             "duration_minutes": estimated_minutes
         }
     ]
 }
+
+For video lessons, set content_type to "video" and write content as a video script outline.
+For ppt lessons, set content_type to "ppt" and write content as slide-by-slide presentation notes.
+For text lessons, set content_type to "text" and write full readable lesson content.{$lessonTypeInstruction}
 PROMPT;
 
-        $userPrompt = "Create a {$difficulty} difficulty training course about \"{$topic}\" for {$targetAudience}. Generate exactly {$lessonCount} lessons. Make content practical, engaging, and relevant to the workplace.";
+        $sourceContext = '';
+        if (!empty($sourceContent)) {
+            $truncated = mb_substr($sourceContent, 0, 6000);
+            $sourceContext = "\n\nUse the following source material as the basis for the course content. Incorporate key concepts, terminology, and examples from it:\n---\n{$truncated}\n---";
+        }
+
+        $userPrompt = "Create a {$difficulty} difficulty training course about \"{$topic}\" for {$targetAudience}. Generate exactly {$lessonCount} lessons. Make content practical, engaging, and relevant to the workplace.{$sourceContext}";
 
         $result = $this->chat($systemPrompt, $userPrompt, 0.7, 8192);
 

@@ -1,7 +1,13 @@
 {{-- Logo --}}
 <div class="flex items-center h-16 px-4 border-b border-indigo-800/30">
     <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
-        <img src="{{ $branding['logo_path'] ?? '/images/auroara-logo.png' }}" alt="{{ $branding['platform_name'] ?? 'Auroara LMS' }}" class="h-8 w-auto brightness-0 invert">
+        @if(!empty($branding['logo_path']))
+            <img src="{{ $branding['logo_path'] }}" alt="{{ $branding['platform_name'] ?? 'Auroara LMS' }}" class="h-8 w-auto">
+        @else
+            <div class="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center">
+                <span class="text-white font-bold text-sm">{{ substr($branding['platform_name'] ?? 'A', 0, 1) }}</span>
+            </div>
+        @endif
         <span class="text-lg font-bold text-white">{{ $branding['platform_name'] ?? 'Auroara LMS' }}</span>
     </a>
 </div>
@@ -162,6 +168,13 @@
             </svg>
             Assignments
         </a>
+        <a href="{{ route('manage.career-paths.index') }}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('manage.career-paths.*') ? 'bg-white/15 text-white shadow-sm' : 'text-indigo-200 hover:bg-white/10 hover:text-white hover:translate-x-0.5' }}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+            </svg>
+            Career Paths
+        </a>
         <a href="{{ route('manage.credentials.index') }}"
            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('manage.credentials.*') ? 'bg-white/15 text-white shadow-sm' : 'text-indigo-200 hover:bg-white/10 hover:text-white hover:translate-x-0.5' }}">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -231,6 +244,13 @@
        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('learn.learning-paths.*') ? 'bg-white/15 text-white shadow-sm' : 'text-indigo-200 hover:bg-white/10 hover:text-white hover:translate-x-0.5' }}">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
         My Learning Paths
+    </a>
+    <a href="{{ route('learn.career-paths.index') }}"
+       class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('learn.career-paths.*') ? 'bg-white/15 text-white shadow-sm' : 'text-indigo-200 hover:bg-white/10 hover:text-white hover:translate-x-0.5' }}">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+        </svg>
+        Career Paths
     </a>
     <a href="{{ route('learn.credentials.index') }}"
        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('learn.credentials.*') || request()->routeIs('learn.certificates.*') ? 'bg-white/15 text-white shadow-sm' : 'text-indigo-200 hover:bg-white/10 hover:text-white hover:translate-x-0.5' }}">

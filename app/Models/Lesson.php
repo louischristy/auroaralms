@@ -12,6 +12,8 @@ class Lesson extends Model
 {
     use Auditable;
 
+    public const CONTENT_TYPES = ['text', 'video', 'ppt', 'scorm'];
+
     protected $fillable = [
         'course_id', 'title', 'slug', 'content', 'content_type',
         'video_url', 'duration_minutes', 'sort_order', 'is_active',

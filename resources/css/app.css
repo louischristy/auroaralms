@@ -13,77 +13,344 @@
     }
 }
 
+/* ── Micro-animations ── */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.3); }
+    50% { box-shadow: 0 0 12px 4px rgba(99, 102, 241, 0.15); }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.4s ease-out both;
+}
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out both;
+}
+.animate-delay-100 { animation-delay: 0.1s; }
+.animate-delay-200 { animation-delay: 0.2s; }
+.animate-delay-300 { animation-delay: 0.3s; }
+.animate-delay-400 { animation-delay: 0.4s; }
+
 @layer components {
+
+    /* ── Buttons ── */
     .btn {
         @apply inline-flex items-center justify-center px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
     }
     .btn-primary {
-        @apply btn text-white shadow-sm hover:shadow-md focus:ring-primary;
-        background: linear-gradient(135deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 85%, black));
+        @apply btn text-white shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] focus:ring-primary;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    }
+    .btn-primary:hover {
+        background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 90%, white), color-mix(in srgb, var(--color-secondary) 90%, white));
     }
     .btn-secondary {
-        @apply btn border-2 border-secondary text-secondary hover:bg-secondary hover:text-white focus:ring-secondary;
+        @apply btn border-2 border-secondary text-secondary hover:bg-secondary hover:text-white hover:shadow-md hover:scale-[1.02] active:scale-[0.98] focus:ring-secondary;
     }
     .btn-accent {
-        @apply btn bg-accent text-white hover:opacity-90 focus:ring-accent;
+        @apply btn text-white hover:opacity-90 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] focus:ring-accent;
+        background: linear-gradient(135deg, var(--color-accent), color-mix(in srgb, var(--color-accent) 80%, var(--color-primary)));
     }
     .btn-outline {
-        @apply btn border-2 border-primary text-primary hover:bg-primary hover:text-white focus:ring-primary;
+        @apply btn border-2 border-primary text-primary hover:bg-primary hover:text-white hover:shadow-md hover:scale-[1.02] active:scale-[0.98] focus:ring-primary;
     }
     .btn-danger {
-        @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+        @apply btn text-white hover:shadow-md hover:scale-[1.02] active:scale-[0.98] focus:ring-red-500;
+        background: linear-gradient(135deg, #DC2626, #B91C1C);
     }
     .btn-sm {
         @apply px-3 py-1.5 text-xs;
     }
-
-    .card {
-        @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden transition-shadow duration-200 hover:shadow-md;
+    .btn-ghost {
+        @apply btn text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-[1.02] active:scale-[0.98];
     }
 
+    /* ── Cards ── */
+    .card {
+        @apply bg-white dark:bg-gray-800 rounded-2xl overflow-hidden transition-all duration-300;
+        border: 1px solid transparent;
+        background-clip: padding-box;
+        box-shadow:
+            0 1px 3px rgba(0,0,0,0.06),
+            0 4px 12px rgba(0,0,0,0.04),
+            0 0 0 1px rgba(99,102,241,0.06);
+    }
+    .card:hover {
+        box-shadow:
+            0 4px 12px rgba(0,0,0,0.08),
+            0 8px 24px rgba(99,102,241,0.08),
+            0 0 0 1px rgba(99,102,241,0.12);
+        transform: translateY(-1px);
+    }
+    .dark .card {
+        box-shadow:
+            0 1px 3px rgba(0,0,0,0.2),
+            0 4px 12px rgba(0,0,0,0.15),
+            0 0 0 1px rgba(99,102,241,0.15);
+    }
+    .dark .card:hover {
+        box-shadow:
+            0 4px 12px rgba(0,0,0,0.25),
+            0 8px 24px rgba(99,102,241,0.12),
+            0 0 0 1px rgba(99,102,241,0.25);
+    }
+
+    .card-gradient-border {
+        @apply relative rounded-2xl overflow-hidden;
+        background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2), rgba(6,182,212,0.2));
+        padding: 1px;
+    }
+    .card-gradient-border > * {
+        @apply bg-white dark:bg-gray-800 rounded-2xl;
+    }
+
+    /* ── Stat / Dashboard cards ── */
+    .stat-card {
+        @apply card relative overflow-hidden p-6;
+    }
+    .stat-card::before {
+        content: '';
+        @apply absolute top-0 left-0 right-0 h-1;
+        background: linear-gradient(90deg, var(--color-primary), var(--color-secondary), var(--color-accent));
+    }
+    .stat-card .stat-icon {
+        @apply w-12 h-12 rounded-xl flex items-center justify-center text-white;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    }
+    .stat-card .stat-icon-accent {
+        @apply w-12 h-12 rounded-xl flex items-center justify-center text-white;
+        background: linear-gradient(135deg, var(--color-accent), color-mix(in srgb, var(--color-accent) 70%, var(--color-primary)));
+    }
+    .stat-card .stat-value {
+        @apply text-3xl font-bold text-gray-900 dark:text-white;
+    }
+    .stat-card .stat-label {
+        @apply text-sm font-medium text-gray-500 dark:text-gray-400 mt-1;
+    }
+    .stat-card .stat-change {
+        @apply text-xs font-semibold mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full;
+    }
+    .stat-card .stat-change-up {
+        @apply stat-change bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400;
+    }
+    .stat-card .stat-change-down {
+        @apply stat-change bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400;
+    }
+    .stat-card .stat-bg-icon {
+        @apply absolute -bottom-2 -right-2 w-24 h-24 opacity-[0.04] dark:opacity-[0.06];
+    }
+
+    /* ── Forms ── */
     .input {
-        @apply w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary-200 transition-all duration-200;
+        @apply w-full rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-4 py-2.5 text-sm transition-all duration-300;
+    }
+    .input:focus {
+        @apply border-primary ring-2 outline-none;
+        --tw-ring-color: rgba(99, 102, 241, 0.2);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1), 0 0 16px rgba(99, 102, 241, 0.08);
+    }
+    .dark .input:focus {
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2), 0 0 16px rgba(99, 102, 241, 0.12);
     }
 
     .label {
-        @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+        @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5;
     }
 
+    .form-group {
+        @apply relative mb-5;
+    }
+    .form-group-inline {
+        @apply flex items-center gap-4;
+    }
+
+    .input-group {
+        @apply bg-white dark:bg-gray-800 rounded-2xl p-5 space-y-4;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 0 0 1px rgba(99,102,241,0.06);
+    }
+    .dark .input-group {
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15), 0 0 0 1px rgba(99,102,241,0.12);
+    }
+    .input-group .label {
+        @apply text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500 font-semibold;
+    }
+
+    /* Floating label */
+    .float-label {
+        @apply relative;
+    }
+    .float-label .input {
+        @apply placeholder-transparent pt-5 pb-2;
+    }
+    .float-label .float-label-text {
+        @apply absolute left-4 top-2.5 text-xs font-medium text-gray-400 dark:text-gray-500 transition-all duration-200 pointer-events-none;
+    }
+    .float-label .input:placeholder-shown ~ .float-label-text {
+        @apply top-3 text-sm text-gray-400;
+    }
+    .float-label .input:focus ~ .float-label-text {
+        @apply top-1.5 text-xs text-primary;
+    }
+
+    /* ── Badges / Status indicators ── */
     .badge {
-        @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+        @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-colors duration-200;
     }
     .badge-success {
-        @apply badge bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400;
+        @apply badge bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400;
+        box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.15);
     }
     .badge-warning {
-        @apply badge bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400;
+        @apply badge bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400;
+        box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.15);
     }
     .badge-danger {
-        @apply badge bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400;
+        @apply badge bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400;
+        box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.15);
     }
     .badge-info {
-        @apply badge bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400;
+        @apply badge bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400;
+        box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.15);
+    }
+    .badge-primary {
+        @apply badge text-white;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    }
+    .badge-neutral {
+        @apply badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300;
+    }
+
+    .status-dot {
+        @apply inline-block w-2 h-2 rounded-full;
+    }
+    .status-dot-success {
+        @apply status-dot bg-emerald-500;
+        box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+    }
+    .status-dot-warning {
+        @apply status-dot bg-amber-500;
+        box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+    }
+    .status-dot-danger {
+        @apply status-dot bg-red-500;
+        box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+    }
+    .status-dot-info {
+        @apply status-dot bg-blue-500;
+        box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
+    }
+
+    /* ── Tables ── */
+    .table-wrapper {
+        @apply bg-white dark:bg-gray-800 rounded-2xl overflow-hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px rgba(99,102,241,0.06);
+    }
+    .dark .table-wrapper {
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 0 0 1px rgba(99,102,241,0.12);
+    }
+    .table-styled {
+        @apply w-full text-sm;
+    }
+    .table-styled thead th {
+        @apply px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400;
+        background: linear-gradient(180deg, #F9FAFB, #F3F4F6);
+        border-bottom: 2px solid rgba(99,102,241,0.1);
+    }
+    .dark .table-styled thead th {
+        background: linear-gradient(180deg, #1F2937, #1a2332);
+        border-bottom: 2px solid rgba(99,102,241,0.2);
+    }
+    .table-styled tbody tr {
+        @apply border-b border-gray-50 dark:border-gray-700/50 transition-colors duration-150;
+    }
+    .table-styled tbody tr:nth-child(even) {
+        @apply bg-gray-50/50 dark:bg-gray-800/50;
+    }
+    .table-styled tbody tr:hover {
+        @apply bg-indigo-50/40 dark:bg-indigo-900/10;
+    }
+    .table-styled tbody td {
+        @apply px-5 py-3.5 text-gray-700 dark:text-gray-300;
+    }
+
+    /* ── Typography ── */
+    .heading-gradient {
+        @apply font-bold bg-clip-text text-transparent;
+        background-image: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    }
+    .heading-xl {
+        @apply text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white tracking-tight;
+    }
+    .heading-lg {
+        @apply text-2xl font-bold text-gray-900 dark:text-white tracking-tight;
+    }
+    .heading-md {
+        @apply text-xl font-semibold text-gray-800 dark:text-gray-100;
+    }
+    .heading-sm {
+        @apply text-lg font-semibold text-gray-800 dark:text-gray-100;
+    }
+    .subtitle {
+        @apply text-sm text-gray-500 dark:text-gray-400 mt-1;
+    }
+    .page-header {
+        @apply mb-8;
+    }
+    .page-header .page-title {
+        @apply heading-xl heading-gradient;
+    }
+    .page-header .page-subtitle {
+        @apply text-base text-gray-500 dark:text-gray-400 mt-2;
     }
 
     .bg-gradient-brand {
         background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05), rgba(6, 182, 212, 0.03));
     }
 
-    /* Prose-like typography for lesson content */
+    /* ── Top bar / frosted glass ── */
+    .topbar-glass {
+        @apply sticky top-0 z-30;
+        background: rgba(255, 255, 255, 0.72);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border-bottom: 1px solid rgba(99, 102, 241, 0.08);
+    }
+    .dark .topbar-glass {
+        background: rgba(17, 24, 39, 0.78);
+        border-bottom: 1px solid rgba(99, 102, 241, 0.15);
+    }
+
+    /* ── Dashboard grid ── */
+    .dashboard-grid {
+        @apply grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5;
+    }
+
+    /* ── Prose-like typography for lesson content ── */
     .lesson-content {
         @apply text-gray-700 dark:text-gray-300 leading-relaxed text-base;
     }
     .lesson-content h1 {
-        @apply text-2xl font-bold text-gray-900 mt-8 mb-4 pb-2 border-b border-gray-200;
+        @apply text-2xl font-bold text-gray-900 dark:text-white mt-8 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700;
     }
     .lesson-content h2 {
-        @apply text-xl font-bold text-gray-900 mt-8 mb-3;
+        @apply text-xl font-bold text-gray-900 dark:text-white mt-8 mb-3;
     }
     .lesson-content h3 {
-        @apply text-lg font-semibold text-gray-800 mt-6 mb-2;
+        @apply text-lg font-semibold text-gray-800 dark:text-gray-200 mt-6 mb-2;
     }
     .lesson-content h4 {
-        @apply text-base font-semibold text-gray-800 mt-4 mb-2;
+        @apply text-base font-semibold text-gray-800 dark:text-gray-200 mt-4 mb-2;
     }
     .lesson-content p {
         @apply mb-4 leading-7;
@@ -129,10 +396,10 @@
         @apply px-4 py-2 border border-gray-200 dark:border-gray-700;
     }
     .lesson-content hr {
-        @apply my-8 border-gray-200;
+        @apply my-8 border-gray-200 dark:border-gray-700;
     }
     .lesson-content strong {
-        @apply font-semibold text-gray-900;
+        @apply font-semibold text-gray-900 dark:text-white;
     }
 }
 
