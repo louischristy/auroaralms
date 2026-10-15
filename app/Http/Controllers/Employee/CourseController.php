@@ -24,29 +24,39 @@ class CourseController extends Controller
         $user = Auth::user();
         $tenantId = $user->tenant_id;
 
-        // Get courses assigned to user's tenant
-        $tenantCourseIds = DB::table('course_tenant')
-            ->where('tenant_id', $tenantId)
-            ->pluck('course_id');
-
-        // Get courses assigned directly to this user
-        $userCourseIds = DB::table('course_user')
-            ->where('user_id', $user->id)
-            ->pluck('course_id');
-
-        $courseIds = $tenantCourseIds->merge($userCourseIds)->unique();
-
-        $courses = Course::where(function ($q) use ($courseIds, $tenantId) {
-                $q->whereIn('id', $courseIds)
-                  ->orWhere('tenant_id', $tenantId);
-            })
-            ->where('is_active', true)
+        // Platform admin (no tenant) sees all active courses
+        if (!$tenantId) {
+            $courses = Course::where('is_active', true)
             ->when($request->category, fn($q, $cat) => $q->where('category', $cat))
             ->select('id', 'title', 'slug', 'description', 'category', 'difficulty', 'thumbnail_path', 'duration_minutes', 'is_mandatory', 'sort_order')
             ->withCount(['lessons' => fn($q) => $q->where('is_active', true)])
             ->orderBy('category')
             ->orderBy('sort_order')
             ->get();
+        } else {
+            // Tenant users see courses assigned to their tenant or directly to them
+            $tenantCourseIds = DB::table('course_tenant')
+                ->where('tenant_id', $tenantId)
+                ->pluck('course_id');
+
+            $userCourseIds = DB::table('course_user')
+                ->where('user_id', $user->id)
+                ->pluck('course_id');
+
+            $courseIds = $tenantCourseIds->merge($userCourseIds)->unique();
+
+            $courses = Course::where(function ($q) use ($courseIds, $tenantId) {
+                    $q->whereIn('id', $courseIds)
+                      ->orWhere('tenant_id', $tenantId);
+                })
+                ->where('is_active', true)
+                ->when($request->category, fn($q, $cat) => $q->where('category', $cat))
+                ->select('id', 'title', 'slug', 'description', 'category', 'difficulty', 'thumbnail_path', 'duration_minutes', 'is_mandatory', 'sort_order')
+                ->withCount(['lessons' => fn($q) => $q->where('is_active', true)])
+                ->orderBy('category')
+                ->orderBy('sort_order')
+                ->get();
+        }
 
         // Get enrollments for this user
         $enrollments = CourseEnrollment::where('user_id', $user->id)
@@ -86,7 +96,7 @@ class CourseController extends Controller
             }
         }
 
-        $categories = Course::where(function ($q) use ($courseIds, $tenantId) { $q->whereIn('id', $courseIds)->orWhere('tenant_id', $tenantId); })->where('is_active', true)->distinct()->pluck('category')->filter()->sort()->values();
+        $categories = $courses->pluck('category')->unique()->filter()->sort()->values();
         return view('employee.courses.index', compact('courses', 'enrollments', 'completedLessonsMap', 'courseQuizMap', 'quizPassedMap', 'categories'));
     }
 
