@@ -160,11 +160,26 @@ class AiToolsController extends Controller
             ]);
 
             foreach (($data['lessons'] ?? []) as $i => $lessonData) {
+                $lessonContent = $lessonData['content'];
+
+                // Append YouTube video suggestions if available
+                if (!empty($lessonData['youtube_suggestions'])) {
+                    $lessonContent .= '<div class="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">';
+                    $lessonContent .= '<h3 class="text-base font-semibold text-gray-800 mb-3">Recommended Videos</h3>';
+                    $lessonContent .= '<ul class="space-y-2">';
+                    foreach ($lessonData['youtube_suggestions'] as $yt) {
+                        $query = urlencode($yt['query'] ?? $yt);
+                        $desc = $yt['description'] ?? $yt['query'] ?? $yt;
+                        $lessonContent .= '<li><a href="https://www.youtube.com/results?search_query=' . $query . '" target="_blank" rel="noopener" class="text-blue-600 hover:underline">' . e($desc) . '</a></li>';
+                    }
+                    $lessonContent .= '</ul></div>';
+                }
+
                 Lesson::create([
                     'course_id' => $course->id,
                     'title' => $lessonData['title'],
                     'slug' => Str::slug($lessonData['title']),
-                    'content' => $lessonData['content'],
+                    'content' => $lessonContent,
                     'content_type' => $lessonData['content_type'] ?? 'text',
                     'duration_minutes' => $lessonData['duration_minutes'] ?? 10,
                     'sort_order' => $i + 1,
